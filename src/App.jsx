@@ -21,6 +21,7 @@ import AdminMedico from './pages/Admin/AdminMedicos';
 import AdminPaciente from './pages/Admin/AdminPaciente'; 
 import AdminHistorico from './pages/Admin/AdminHistorico';
 import AdminRelato from './pages/Admin/AdminRelatorio';
+import AdminConsultas from "./pages/Admin/AdminConsultas"
 
 
 // ----------------------------------------------------
@@ -67,6 +68,7 @@ function App() {
                                 <Route path="pacientes" element={<AdminPaciente />} />
                                 <Route path="historico" element={<AdminHistorico />} />
                                 <Route path="relatorios" element={<AdminRelato />} />
+                                <Route path="consultas" element={<AdminConsultas />} />
 
                             </Route>
                             

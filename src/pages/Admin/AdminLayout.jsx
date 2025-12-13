@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 
-// Definição dos itens de navegação
+// Definição dos itens de navegação (ITEM NOVO ADICIONADO AQUI)
 const navItems = [
     { name: 'Dashboard', path: '/admin', icon: '🏠' },
+    // 🚨 NOVO ITEM AQUI
+    { name: 'Consultas', path: '/admin/consultas', icon: '🗓️' }, 
     { name: 'Médicos', path: '/admin/medicos', icon: '🧑‍⚕️' },
     { name: 'Pacientes', path: '/admin/pacientes', icon: '🧍' },
     { name: 'Histórico', path: '/admin/historico', icon: '📜' },
@@ -16,11 +18,18 @@ function AdminLayout() {
 
     // Componente de Item do Menu
     const NavItem = ({ item }) => {
+        // Correção no isActive para garantir que a rota base (admin) não ative outras rotas filhas
         const isActive = location.pathname === item.path || 
                          (item.path !== '/admin' && location.pathname.startsWith(item.path));
         
+        // Se a rota for o Dashboard ('/admin'), ele só deve estar ativo se for exatamente '/admin'
+        const isDashboardActive = item.path === '/admin' && location.pathname === '/admin';
+        
+        // Lógica final de Ativo
+        const isCurrentlyActive = (item.path === '/admin' ? isDashboardActive : isActive);
+
         const baseClasses = "flex items-center p-3 my-1 rounded-lg transition-colors duration-200";
-        const activeClasses = isActive ? "bg-blue-600 text-white shadow-md" : "text-gray-700 hover:bg-gray-200";
+        const activeClasses = isCurrentlyActive ? "bg-blue-600 text-white shadow-md" : "text-gray-700 hover:bg-gray-200";
 
         return (
             <Link to={item.path} className={`${baseClasses} ${activeClasses}`}>
@@ -71,7 +80,6 @@ function AdminLayout() {
 
                 {/* Área de Rota Filha */}
                 <main className="flex-1 overflow-x-hidden overflow-y-auto p-4">
-                    {/* O componente OUTLET renderizará o AdminDashboard, AdminMedicos, etc. */}
                     <Outlet />
                 </main>
             </div>

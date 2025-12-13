@@ -1,108 +1,121 @@
-// src/pages/Paciente/PacienteAgendamento.jsx
-
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { agendarConsulta, getMedicos } from '../../api/consultasService';
-import { useNavigate } from 'react-router-dom';
+import { agendarConsulta } from '../../api/consultasService';
+import { listarMedicos, buscarMedicosPorEspecialidade } from '../../api/medicoService'; 
+// Importe a função que pega o ID do usuário logado (assumindo que existe)
+import { getUserId } from '../../api/authService'; 
+
 
 function PacienteAgendamento() {
-    // 1. Estado de Formulário
-    const [medicoId, setMedicoId] = useState('');
-    const [dataHora, setDataHora] = useState('');
-    const [motivo, setMotivo] = useState('');
-    
-    // 2. Estado de Carregamento/Resposta
     const [medicos, setMedicos] = useState([]);
+    const [selectedMedicoId, setSelectedMedicoId] = useState('');
+    const [dataHora, setDataHora] = useState('');
+    const [especialidadeFiltro, setEspecialidadeFiltro] = useState('TODAS');
     const [loading, setLoading] = useState(true);
-    const [success, setSuccess] = useState(null);
     const [error, setError] = useState(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // 3. Hooks
-    const { user } = useAuth(); // Assume que user.id é o ID do Paciente
-    const navigate = useNavigate();
-
-    // ----------------------------------------------------
-    // Efeito: Carregar a Lista de Médicos
-    // ----------------------------------------------------
-    useEffect(() => {
-        const fetchMedicos = async () => {
-            try {
-                const data = await getMedicos();
-                setMedicos(data);
-            } catch (err) {
-                setError('Não foi possível carregar a lista de médicos.');
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchMedicos();
-    }, []);
-
-    // ----------------------------------------------------
-    // Função: Submissão do Agendamento
-    // ----------------------------------------------------
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    // --------------------------------------------------------------------
+    // Carrega a lista inicial de médicos
+    // --------------------------------------------------------------------
+    const fetchMedicos = async (especialidade = 'TODAS') => {
+        setLoading(true);
         setError(null);
-        setSuccess(null);
-        setIsSubmitting(true);
-
-        // Prepara os dados (incluindo o ID do paciente logado)
-        const dadosAgendamento = {
-            pacienteId: user.id, 
-            medicoId: parseInt(medicoId), 
-            dataHora: dataHora, 
-            motivo: motivo,
-        };
-
         try {
-            await agendarConsulta(dadosAgendamento);
-            setSuccess('Consulta agendada com sucesso! Você será redirecionado.');
-            
-            // Redireciona para o Painel do Paciente após 3 segundos
-            setTimeout(() => {
-                navigate('/paciente');
-            }, 3000);
-
+            let data;
+            if (especialidade === 'TODAS') {
+                data = await listarMedicos();
+            } else {
+                data = await buscarMedicosPorEspecialidade(especialidade);
+            }
+            setMedicos(data);
         } catch (err) {
-            console.error("Erro no agendamento:", err);
-            setError(err.message || 'Ocorreu um erro desconhecido ao agendar.');
+            setError(err.message || 'Erro ao carregar médicos.');
         } finally {
-            setIsSubmitting(false);
+            setLoading(false);
         }
     };
 
-    // ----------------------------------------------------
-    // 4. Renderização
-    // ----------------------------------------------------
-    if (loading) {
-        return <div className="container mt-5 text-center text-white">Carregando formulário...</div>;
-    }
+    useEffect(() => {
+        fetchMedicos();
+    }, []);
+
+    const ESPECIALIDADES = useMemo(() => {
+        // Gera a lista única de especialidades a partir dos médicos carregados
+        const unique = [...new Set(medicos.map(m => m.especialidade))];
+        return ['TODAS', ...unique].filter(e => e); // Garante que não há nulos
+    }, [medicos]);
+
+    // Lida com a mudança de filtro de especialidade
+    const handleEspecialidadeChange = (e) => {
+        const especialidade = e.target.value;
+        setEspecialidadeFiltro(especialidade);
+        setSelectedMedicoId(''); // Limpa a seleção de médico ao mudar o filtro
+        fetchMedicos(especialidade);
+    };
+
+
+    // --------------------------------------------------------------------
+    // Lógica de Agendamento
+    // --------------------------------------------------------------------
+    const handleAgendar = async (e) => {
+        e.preventDefault();
+        
+        const pacienteId = getUserId(); // Supondo que você tem uma função para pegar o ID logado
+        
+        if (!pacienteId || !selectedMedicoId || !dataHora) {
+            alert('Por favor, preencha todos os campos.');
+            return;
+        }
+
+        const agendamentoData = {
+            pacienteId: pacienteId,
+            medicoId: selectedMedicoId,
+            dataConsulta: dataHora, // Deve estar no formato ISO8601 esperado pelo Backend (ex: YYYY-MM-DDTHH:MM:SS)
+        };
+        
+        try {
+            await agendarConsulta(agendamentoData);
+            alert('Consulta agendada com sucesso!');
+            // Limpa o formulário após sucesso
+            setSelectedMedicoId('');
+            setDataHora('');
+        } catch (err) {
+            alert(`Falha no agendamento: ${err.message}`);
+        }
+    };
+
+    if (loading) return <div className="p-4 text-center text-blue-600">Carregando opções de agendamento...</div>;
+    if (error) return <div className="p-4 text-red-700 bg-red-100 border border-red-400 rounded-md">Erro: {error}</div>;
 
     return (
-        <div className="container mt-4 text-white">
-            <h2 className="mb-4">Agendar Nova Consulta</h2>
-            
-            <div className="card bg-dark text-white border-secondary p-4">
-                
-                {/* Mensagens de Sucesso/Erro */}
-                {success && <div className="alert alert-success">{success}</div>}
-                {error && <div className="alert alert-danger">{error}</div>}
-
-                <form onSubmit={handleSubmit}>
+        <div className="p-4 max-w-2xl mx-auto">
+            <h2 className="text-2xl font-semibold mb-6 border-b pb-2">Agendamento de Consulta</h2>
+            <div className="bg-white p-6 shadow-lg rounded-lg">
+                <form onSubmit={handleAgendar}>
                     
-                    {/* Campo Médico */}
-                    <div className="mb-3">
-                        <label htmlFor="medico" className="form-label">Selecione o Médico</label>
+                    {/* Filtro de Especialidade */}
+                    <div className="mb-4">
+                        <label className="block text-gray-700 font-bold mb-2">Filtrar por Especialidade</label>
                         <select
-                            id="medico"
-                            className="form-select"
-                            value={medicoId}
-                            onChange={(e) => setMedicoId(e.target.value)}
+                            value={especialidadeFiltro}
+                            onChange={handleEspecialidadeChange}
+                            className="w-full border p-3 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            {ESPECIALIDADES.map(e => (
+                                <option key={e} value={e}>{e === 'TODAS' ? 'Todas as Especialidades' : e}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Seleção do Médico */}
+                    <div className="mb-4">
+                        <label className="block text-gray-700 font-bold mb-2">Selecionar Médico</label>
+                        <select
+                            value={selectedMedicoId}
+                            onChange={(e) => setSelectedMedicoId(e.target.value)}
+                            className="w-full border p-3 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                             required
                         >
-                            <option value="" disabled>Escolha um médico...</option>
+                            <option value="" disabled>-- Selecione um Médico --</option>
                             {medicos.map(medico => (
                                 <option key={medico.id} value={medico.id}>
                                     {medico.nome} ({medico.especialidade})
@@ -111,42 +124,25 @@ function PacienteAgendamento() {
                         </select>
                     </div>
 
-                    {/* Campo Data e Hora */}
-                    <div className="mb-3">
-                        <label htmlFor="dataHora" className="form-label">Data e Hora</label>
+                    {/* Data e Hora */}
+                    <div className="mb-6">
+                        <label className="block text-gray-700 font-bold mb-2" htmlFor="dataHora">Data e Hora</label>
                         <input
-                            type="datetime-local" // HTML5 facilita a seleção de data/hora
-                            className="form-control"
+                            type="datetime-local"
                             id="dataHora"
                             value={dataHora}
                             onChange={(e) => setDataHora(e.target.value)}
+                            className="w-full border p-3 rounded-lg focus:ring-blue-500 focus:border-blue-500"
                             required
-                            min={new Date().toISOString().slice(0, 16)} // Bloqueia datas passadas
                         />
                     </div>
-
-                    {/* Campo Motivo */}
-                    <div className="mb-3">
-                        <label htmlFor="motivo" className="form-label">Motivo da Consulta</label>
-                        <textarea
-                            id="motivo"
-                            className="form-control"
-                            rows="3"
-                            value={motivo}
-                            onChange={(e) => setMotivo(e.target.value)}
-                            required
-                        ></textarea>
-                    </div>
-
-                    {/* Botão de Agendamento */}
-                    <button
-                        type="submit"
-                        className="btn btn-success w-100"
-                        disabled={isSubmitting || !medicoId || !dataHora}
-                    >
-                        {isSubmitting ? 'Verificando Disponibilidade...' : 'Confirmar Agendamento'}
-                    </button>
                     
+                    <button 
+                        type="submit"
+                        className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition duration-200"
+                    >
+                        Confirmar Agendamento
+                    </button>
                 </form>
             </div>
         </div>

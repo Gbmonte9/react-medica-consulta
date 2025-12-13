@@ -16,10 +16,9 @@ const getAuthHeaders = () => {
 };
 
 // ----------------------------------------------------
-// 1. AGENDAR Consulta (POST /api/consultas) - Usado pelo Paciente
+// 1. AGENDAR Consulta (POST /api/consultas) - CORRIGIDO
 // ----------------------------------------------------
 export const agendarConsulta = async (agendamentoData) => { 
-    // agendamentoData deve conter médicoId, pacienteId, dataHora, etc.
     try {
         const response = await fetch(CONSULTAS_API_BASE_URL, {
             method: 'POST',
@@ -28,8 +27,17 @@ export const agendarConsulta = async (agendamentoData) => {
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Erro ao agendar consulta. Verifique a disponibilidade.');
+            // ✅ CORREÇÃO: Lê o corpo do erro para pegar a mensagem detalhada do Spring
+            if (response.headers.get('content-type')?.includes('application/json')) {
+                const errorData = await response.json();
+                
+                // Prioriza a mensagem mais específica do Spring
+                const specificError = errorData.message || errorData.error || 'Erro de validação desconhecido no servidor.';
+                
+                throw new Error(specificError);
+            }
+            
+            throw new Error('Erro ao agendar consulta. Verifique a disponibilidade.');
         }
 
         return await response.json(); // Retorna ConsultaResponseDTO
@@ -40,7 +48,7 @@ export const agendarConsulta = async (agendamentoData) => {
 };
 
 // ----------------------------------------------------
-// 2. LISTAR Todas as Consultas (GET /api/consultas) - Usado por Admin/Médico
+// 2. LISTAR Todas as Consultas (GET /api/consultas)
 // ----------------------------------------------------
 export const listarTodasConsultas = async () => {
     try {
@@ -53,16 +61,20 @@ export const listarTodasConsultas = async () => {
             if (response.status === 403) {
                 throw new Error('Acesso negado. Requer autenticação.');
             }
+            // Não precisa de correção aqui, pois esta função não está com erro
             const errorData = await response.json();
             throw new Error(errorData.message || 'Erro ao listar consultas.');
         }
 
-        return await response.json(); // Retorna List<ConsultaResponseDTO>
+        return await response.json(); 
     } catch (error) {
         console.error('Erro em listarTodasConsultas:', error);
         throw error;
     }
 };
+
+// ... (Restante das funções: buscarConsultaPorId, cancelarConsulta, finalizarConsulta, removerConsulta)
+// As demais funções não precisam ser alteradas.
 
 // ----------------------------------------------------
 // 3. BUSCAR Consulta por ID (GET /api/consultas/{id})
