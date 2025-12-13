@@ -1,0 +1,196 @@
+import React, { useState, useEffect, useMemo } from 'react';
+
+// Importamos a função de serviço para listar e cancelar
+import { 
+    listarTodasConsultas, 
+    cancelarConsulta,
+    removerConsulta // Se o admin precisar deletar permanentemente
+} from '../../api/consultasService'; 
+
+function AdminHistorico() {
+    const [consultas, setConsultas] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    
+    // Estados de Filtro
+    const [filtroStatus, setFiltroStatus] = useState('TODAS'); // Ex: AGENDADA, FINALIZADA, CANCELADA
+    const [filtroBusca, setFiltroBusca] = useState(''); // Busca por nome
+
+    // --------------------------------------------------------------------
+    // Lógica de Carregamento de Dados
+    // --------------------------------------------------------------------
+    const fetchConsultas = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const data = await listarTodasConsultas();
+            setConsultas(data);
+            
+        } catch (err) {
+            console.error("Erro ao buscar histórico de consultas:", err);
+            setError(err.message || 'Erro desconhecido ao carregar histórico.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchConsultas();
+    }, []);
+
+    // --------------------------------------------------------------------
+    // Lógica de Ações (Cancelar)
+    // --------------------------------------------------------------------
+    const handleCancelar = async (id, pacienteNome) => {
+        if (!window.confirm(`Tem certeza que deseja CANCELAR a consulta do(a) paciente ${pacienteNome}?`)) {
+            return;
+        }
+
+        try {
+            await cancelarConsulta(id);
+            fetchConsultas(); // Recarrega os dados para refletir a mudança de status
+            alert(`Consulta do(a) paciente ${pacienteNome} cancelada com sucesso.`);
+        } catch (err) {
+            console.error("Erro ao cancelar consulta:", err);
+            alert(`Falha ao cancelar consulta: ${err.message}`);
+        }
+    };
+    
+    // --------------------------------------------------------------------
+    // Lógica de Filtragem (Memoização para performance)
+    // --------------------------------------------------------------------
+    const consultasFiltradas = useMemo(() => {
+        let lista = consultas;
+
+        // 1. Filtrar por Status
+        if (filtroStatus !== 'TODAS') {
+            lista = lista.filter(c => c.status === filtroStatus);
+        }
+
+        // 2. Filtrar por Busca (Nome do Paciente ou Médico)
+        if (filtroBusca) {
+            const buscaNormalizada = filtroBusca.toLowerCase();
+            lista = lista.filter(c => 
+                // Assumindo que a resposta da API inclui nome do paciente e médico
+                c.pacienteNome.toLowerCase().includes(buscaNormalizada) || 
+                c.medicoNome.toLowerCase().includes(buscaNormalizada)
+            );
+        }
+
+        return lista;
+    }, [consultas, filtroStatus, filtroBusca]);
+
+    // --------------------------------------------------------------------
+    // Funções Auxiliares de Visual (Status)
+    // --------------------------------------------------------------------
+    const getStatusClasses = (status) => {
+        switch (status) {
+            case 'AGENDADA': return 'bg-blue-100 text-blue-800';
+            case 'FINALIZADA': return 'bg-green-100 text-green-800';
+            case 'CANCELADA': return 'bg-red-100 text-red-800';
+            default: return 'bg-gray-100 text-gray-800';
+        }
+    };
+
+    if (loading) return <div className="p-4 text-center text-blue-600">Carregando histórico de consultas...</div>;
+    if (error) return <div className="p-4 text-red-700 bg-red-100 border border-red-400 rounded-md">Erro: {error}</div>;
+
+    return (
+        <div className="p-4">
+            <h2 className="text-2xl font-semibold mb-6 border-b pb-2">Histórico de Consultas</h2>
+
+            {/* Filtros e Busca */}
+            <div className="bg-white p-4 shadow-md rounded-lg mb-6 flex space-x-4 items-center">
+                
+                {/* Filtro por Status */}
+                <select 
+                    value={filtroStatus}
+                    onChange={(e) => setFiltroStatus(e.target.value)}
+                    className="border p-2 rounded-lg"
+                >
+                    <option value="TODAS">Todos os Status</option>
+                    <option value="AGENDADA">Agendadas</option>
+                    <option value="FINALIZADA">Finalizadas</option>
+                    <option value="CANCELADA">Canceladas</option>
+                </select>
+
+                {/* Filtro por Busca */}
+                <input
+                    type="text"
+                    placeholder="Buscar por Paciente ou Médico..."
+                    value={filtroBusca}
+                    onChange={(e) => setFiltroBusca(e.target.value)}
+                    className="border p-2 rounded-lg flex-1"
+                />
+                <span className="text-gray-500">Total: {consultasFiltradas.length}</span>
+            </div>
+
+            {/* Tabela de Consultas */}
+            <div className="bg-white shadow-md rounded-lg overflow-hidden">
+                <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                        <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data/Hora</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paciente</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Médico (Especialidade)</th>
+                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                        {consultasFiltradas.map((consulta) => (
+                            <tr key={consulta.id} className="hover:bg-gray-50">
+                                
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    {/* Formato: DD/MM/AAAA HH:MM */}
+                                    {new Date(consulta.dataConsulta).toLocaleString('pt-BR')} 
+                                </td>
+                                
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {/* Assumindo que a API retorna o nome do paciente */}
+                                    {consulta.pacienteNome} 
+                                </td>
+                                
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {/* Assumindo que a API retorna o nome e especialidade do médico */}
+                                    {consulta.medicoNome} ({consulta.medicoEspecialidade})
+                                </td>
+                                
+                                <td className="px-6 py-4 whitespace-nowrap text-center">
+                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClasses(consulta.status)}`}>
+                                        {consulta.status}
+                                    </span>
+                                </td>
+                                
+                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-center space-x-2">
+                                    <button 
+                                        // Ação futura: Visualizar detalhes (prontuário, etc.)
+                                        className="text-gray-600 hover:text-gray-900" 
+                                        title="Detalhes"
+                                    >
+                                        👁️
+                                    </button>
+                                    
+                                    {/* Botão de Cancelar (Disponível apenas se AGENDADA) */}
+                                    {consulta.status === 'AGENDADA' && (
+                                        <button 
+                                            onClick={() => handleCancelar(consulta.id, consulta.pacienteNome)}
+                                            className="text-red-600 hover:text-red-900" 
+                                            title="Cancelar Consulta"
+                                        >
+                                            ❌
+                                        </button>
+                                    )}
+                                    
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+}
+
+export default AdminHistorico;
