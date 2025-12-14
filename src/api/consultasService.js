@@ -16,7 +16,50 @@ const getAuthHeaders = () => {
 };
 
 // ----------------------------------------------------
-// 1. AGENDAR Consulta (POST /api/consultas) - CORRIGIDO
+// Função Auxiliar para Extração Robusta de Mensagens de Erro
+// ----------------------------------------------------
+const extractErrorMessage = async (response) => {
+    // Se não for um erro 2xx, tenta extrair a mensagem detalhada do corpo
+    if (!response.ok) {
+        // Tenta ler o corpo JSON
+        if (response.headers.get('content-type')?.includes('application/json')) {
+            try {
+                const errorData = await response.json();
+                
+                // 1. Verifica se há um array de erros (comum em falhas de validação @Valid)
+                if (errorData.errors && Array.isArray(errorData.errors)) {
+                    // Concatena as mensagens de erro de cada campo
+                    const validationMessages = errorData.errors
+                        .map(err => err.defaultMessage || err.message)
+                        .join('; ');
+                    return validationMessages;
+                }
+
+                // 2. Prioriza a mensagem principal (comum em ResponseStatusException)
+                if (errorData.message) {
+                    return errorData.message;
+                }
+                
+                // 3. Fallback para o campo 'error'
+                if (errorData.error) {
+                    return errorData.error;
+                }
+
+            } catch (jsonError) {
+                // Falha ao parsear o JSON de erro
+                console.warn('Falha ao ler o corpo JSON do erro:', jsonError);
+            }
+        }
+        
+        // Fallback genérico (para erros sem corpo JSON ou falhas não capturadas)
+        return `Falha na requisição: ${response.status} ${response.statusText}`;
+    }
+    return null; // Não há erro
+};
+
+
+// ----------------------------------------------------
+// 1. AGENDAR Consulta (POST /api/consultas)
 // ----------------------------------------------------
 export const agendarConsulta = async (agendamentoData) => { 
     try {
@@ -26,18 +69,9 @@ export const agendarConsulta = async (agendamentoData) => {
             body: JSON.stringify(agendamentoData),
         });
 
-        if (!response.ok) {
-            // ✅ CORREÇÃO: Lê o corpo do erro para pegar a mensagem detalhada do Spring
-            if (response.headers.get('content-type')?.includes('application/json')) {
-                const errorData = await response.json();
-                
-                // Prioriza a mensagem mais específica do Spring
-                const specificError = errorData.message || errorData.error || 'Erro de validação desconhecido no servidor.';
-                
-                throw new Error(specificError);
-            }
-            
-            throw new Error('Erro ao agendar consulta. Verifique a disponibilidade.');
+        const errorMessage = await extractErrorMessage(response);
+        if (errorMessage) {
+            throw new Error(errorMessage);
         }
 
         return await response.json(); // Retorna ConsultaResponseDTO
@@ -57,13 +91,9 @@ export const listarTodasConsultas = async () => {
             headers: getAuthHeaders(),
         });
 
-        if (!response.ok) {
-            if (response.status === 403) {
-                throw new Error('Acesso negado. Requer autenticação.');
-            }
-            // Não precisa de correção aqui, pois esta função não está com erro
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Erro ao listar consultas.');
+        const errorMessage = await extractErrorMessage(response);
+        if (errorMessage) {
+            throw new Error(errorMessage);
         }
 
         return await response.json(); 
@@ -72,9 +102,6 @@ export const listarTodasConsultas = async () => {
         throw error;
     }
 };
-
-// ... (Restante das funções: buscarConsultaPorId, cancelarConsulta, finalizarConsulta, removerConsulta)
-// As demais funções não precisam ser alteradas.
 
 // ----------------------------------------------------
 // 3. BUSCAR Consulta por ID (GET /api/consultas/{id})
@@ -86,9 +113,9 @@ export const buscarConsultaPorId = async (id) => {
             headers: getAuthHeaders(),
         });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || `Erro ao buscar consulta ID ${id}.`);
+        const errorMessage = await extractErrorMessage(response);
+        if (errorMessage) {
+            throw new Error(errorMessage);
         }
 
         return await response.json(); // Retorna ConsultaResponseDTO
@@ -99,7 +126,7 @@ export const buscarConsultaPorId = async (id) => {
 };
 
 // ----------------------------------------------------
-// 4. CANCELAR Consulta (PUT /api/consultas/{id}/cancelar) - Usado por Paciente/Admin
+// 4. CANCELAR Consulta (PUT /api/consultas/{id}/cancelar)
 // ----------------------------------------------------
 export const cancelarConsulta = async (id) => {
     try {
@@ -107,18 +134,13 @@ export const cancelarConsulta = async (id) => {
             method: 'PUT',
             headers: getAuthHeaders(),
         });
-
-        if (response.status !== 204) { 
-            // Tenta ler o erro se não for 204
-             if (response.headers.get('content-length') !== '0') {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Erro ao cancelar consulta.');
-            }
-            if (!response.ok) {
-                 throw new Error('Erro desconhecido ao cancelar consulta.');
-            }
-        }
         
+        const errorMessage = await extractErrorMessage(response);
+        if (errorMessage) {
+            throw new Error(errorMessage);
+        }
+
+        // 204 No Content, retorna true se tudo OK
         return true; 
     } catch (error) {
         console.error('Erro em cancelarConsulta:', error);
@@ -127,7 +149,7 @@ export const cancelarConsulta = async (id) => {
 };
 
 // ----------------------------------------------------
-// 5. FINALIZAR Consulta (PUT /api/consultas/{id}/finalizar) - Usado pelo Médico
+// 5. FINALIZAR Consulta (PUT /api/consultas/{id}/finalizar)
 // ----------------------------------------------------
 export const finalizarConsulta = async (id) => {
     try {
@@ -136,16 +158,11 @@ export const finalizarConsulta = async (id) => {
             headers: getAuthHeaders(),
         });
 
-        if (response.status !== 204) { 
-             if (response.headers.get('content-length') !== '0') {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Erro ao finalizar consulta.');
-            }
-            if (!response.ok) {
-                 throw new Error('Erro desconhecido ao finalizar consulta.');
-            }
+        const errorMessage = await extractErrorMessage(response);
+        if (errorMessage) {
+            throw new Error(errorMessage);
         }
-        
+
         return true; 
     } catch (error) {
         console.error('Erro em finalizarConsulta:', error);
@@ -154,7 +171,7 @@ export const finalizarConsulta = async (id) => {
 };
 
 // ----------------------------------------------------
-// 6. REMOVER Consulta (DELETE /api/consultas/{id}) - Geralmente Admin
+// 6. REMOVER Consulta (DELETE /api/consultas/{id})
 // ----------------------------------------------------
 export const removerConsulta = async (id) => {
     try {
@@ -162,17 +179,12 @@ export const removerConsulta = async (id) => {
             method: 'DELETE',
             headers: getAuthHeaders(),
         });
-
-        if (response.status !== 204) { 
-             if (response.headers.get('content-length') !== '0') {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Erro ao remover consulta.');
-            }
-            if (!response.ok) {
-                 throw new Error('Erro desconhecido ao remover consulta.');
-            }
-        }
         
+        const errorMessage = await extractErrorMessage(response);
+        if (errorMessage) {
+            throw new Error(errorMessage);
+        }
+
         return true; 
     } catch (error) {
         console.error('Erro em removerConsulta:', error);

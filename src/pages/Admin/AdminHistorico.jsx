@@ -1,23 +1,39 @@
+// src/pages/Admin/AdminHistorico.jsx
+
 import React, { useState, useEffect, useMemo } from 'react';
+
+// 🎯 CORREÇÃO NO CAMINHO DE IMPORTAÇÃO:
+// Assumindo que o modal está em src/components/HistoricoRegistroModal
+// (Sobe de /Admin para /pages, sobe para /src, e desce para /components)
+import HistoricoRegistroModal from '../../pages/Historico/HistoricoRegistroModal'; 
+// SE ESTIVER EM /src/pages/Historico, USE: import HistoricoRegistroModal from '../Historico/HistoricoRegistroModal'; 
+// A versão abaixo é a mais comum para componentes reutilizáveis.
 
 // Importamos a função de serviço para listar e cancelar
 import { 
     listarTodasConsultas, 
     cancelarConsulta,
-    removerConsulta // Se o admin precisar deletar permanentemente
+    // removerConsulta (Se o admin precisar deletar permanentemente)
 } from '../../api/consultasService'; 
 
+
 function AdminHistorico() {
+    
+    // 1. ESTADOS ESSENCIAIS 
     const [consultas, setConsultas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     
-    // Estados de Filtro
-    const [filtroStatus, setFiltroStatus] = useState('TODAS'); // Ex: AGENDADA, FINALIZADA, CANCELADA
-    const [filtroBusca, setFiltroBusca] = useState(''); // Busca por nome
+    // 2. Estados de Filtro 
+    const [filtroStatus, setFiltroStatus] = useState('TODAS'); 
+    const [filtroBusca, setFiltroBusca] = useState(''); 
+
+    // 3. ESTADOS PARA O MODAL DE HISTÓRICO
+    const [isHistoricoModalOpen, setIsHistoricoModalOpen] = useState(false);
+    const [consultaIdParaHistorico, setConsultaIdParaHistorico] = useState(null);
 
     // --------------------------------------------------------------------
-    // Lógica de Carregamento de Dados
+    // Lógica de Carregamento de Dados 
     // --------------------------------------------------------------------
     const fetchConsultas = async () => {
         try {
@@ -40,7 +56,7 @@ function AdminHistorico() {
     }, []);
 
     // --------------------------------------------------------------------
-    // Lógica de Ações (Cancelar)
+    // Lógica de Ações (Cancelar) 
     // --------------------------------------------------------------------
     const handleCancelar = async (id, pacienteNome) => {
         if (!window.confirm(`Tem certeza que deseja CANCELAR a consulta do(a) paciente ${pacienteNome}?`)) {
@@ -49,7 +65,7 @@ function AdminHistorico() {
 
         try {
             await cancelarConsulta(id);
-            fetchConsultas(); // Recarrega os dados para refletir a mudança de status
+            fetchConsultas(); 
             alert(`Consulta do(a) paciente ${pacienteNome} cancelada com sucesso.`);
         } catch (err) {
             console.error("Erro ao cancelar consulta:", err);
@@ -58,7 +74,7 @@ function AdminHistorico() {
     };
     
     // --------------------------------------------------------------------
-    // Lógica de Filtragem (Memoização para performance)
+    // Lógica de Filtragem 
     // --------------------------------------------------------------------
     const consultasFiltradas = useMemo(() => {
         let lista = consultas;
@@ -72,7 +88,6 @@ function AdminHistorico() {
         if (filtroBusca) {
             const buscaNormalizada = filtroBusca.toLowerCase();
             lista = lista.filter(c => 
-                // Assumindo que a resposta da API inclui nome do paciente e médico
                 c.pacienteNome.toLowerCase().includes(buscaNormalizada) || 
                 c.medicoNome.toLowerCase().includes(buscaNormalizada)
             );
@@ -80,6 +95,20 @@ function AdminHistorico() {
 
         return lista;
     }, [consultas, filtroStatus, filtroBusca]);
+
+    // --------------------------------------------------------------------
+    // 🎯 NOVA LÓGICA: Abrir Modal de Histórico
+    // --------------------------------------------------------------------
+    const handleOpenHistoricoModal = (consultaId) => {
+        // Garantir que a consultaId não é nula antes de abrir
+        if (consultaId) {
+            setConsultaIdParaHistorico(consultaId);
+            setIsHistoricoModalOpen(true);
+        } else {
+            console.error("ID da consulta não fornecido para o histórico.");
+        }
+    };
+
 
     // --------------------------------------------------------------------
     // Funções Auxiliares de Visual (Status)
@@ -93,6 +122,7 @@ function AdminHistorico() {
         }
     };
 
+    // CONDIÇÃO DE RENDERIZAÇÃO 
     if (loading) return <div className="p-4 text-center text-blue-600">Carregando histórico de consultas...</div>;
     if (error) return <div className="p-4 text-red-700 bg-red-100 border border-red-400 rounded-md">Erro: {error}</div>;
 
@@ -143,17 +173,14 @@ function AdminHistorico() {
                             <tr key={consulta.id} className="hover:bg-gray-50">
                                 
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    {/* Formato: DD/MM/AAAA HH:MM */}
                                     {new Date(consulta.dataConsulta).toLocaleString('pt-BR')} 
                                 </td>
                                 
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {/* Assumindo que a API retorna o nome do paciente */}
                                     {consulta.pacienteNome} 
                                 </td>
                                 
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {/* Assumindo que a API retorna o nome e especialidade do médico */}
                                     {consulta.medicoNome} ({consulta.medicoEspecialidade})
                                 </td>
                                 
@@ -165,14 +192,24 @@ function AdminHistorico() {
                                 
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-center space-x-2">
                                     <button 
-                                        // Ação futura: Visualizar detalhes (prontuário, etc.)
                                         className="text-gray-600 hover:text-gray-900" 
                                         title="Detalhes"
                                     >
                                         👁️
                                     </button>
                                     
-                                    {/* Botão de Cancelar (Disponível apenas se AGENDADA) */}
+                                    {/* 2. Botão de Registrar Histórico (Visível se FINALIZADA) */}
+                                    {(consulta.status === 'FINALIZADA' || consulta.status === 'REALIZADA') && (
+                                        <button 
+                                            onClick={() => handleOpenHistoricoModal(consulta.id)}
+                                            className="text-green-600 hover:text-green-900 font-semibold" 
+                                            title="Registrar Histórico/Prontuário"
+                                        >
+                                            📝
+                                        </button>
+                                    )}
+
+                                    {/* 3. Botão de Cancelar (APENAS SE AGENDADA) */}
                                     {consulta.status === 'AGENDADA' && (
                                         <button 
                                             onClick={() => handleCancelar(consulta.id, consulta.pacienteNome)}
@@ -189,6 +226,19 @@ function AdminHistorico() {
                     </tbody>
                 </table>
             </div>
+            
+            {/* 🎯 INCLUSÃO DO MODAL DE REGISTRO DE HISTÓRICO */}
+            <HistoricoRegistroModal
+                isOpen={isHistoricoModalOpen}
+                onClose={() => setIsHistoricoModalOpen(false)}
+                consultaId={consultaIdParaHistorico}
+                onHistoricoSuccess={() => {
+                    // Após salvar o histórico, feche o modal e recarregue a lista 
+                    setIsHistoricoModalOpen(false);
+                    fetchConsultas(); 
+                }}
+            />
+
         </div>
     );
 }
