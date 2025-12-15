@@ -6,7 +6,7 @@ import {
     cancelarConsulta,
 } from '../../api/consultasService'; 
 
-// 🚨 CAMINHO PADRÃO CORRIGIDO: Assume que o modal está em components/modals
+// 🚨 CORREÇÃO DE CAMINHO: O modal foi movido para a pasta components/modals
 import AdminAgendamentoModal from '../../pages/Admin/AdminAgendamentoModal'; 
 
 
@@ -22,7 +22,6 @@ function AdminConsultas() {
 
     // Lógica de Carregamento de Dados
     const fetchConsultas = async () => {
-        // ... (lógica de carregamento de dados)
         try {
             setLoading(true);
             setError(null);
@@ -70,11 +69,12 @@ function AdminConsultas() {
         if (filtroBusca) {
             const buscaNormalizada = filtroBusca.toLowerCase();
             lista = lista.filter(c => 
-                c.pacienteNome.toLowerCase().includes(buscaNormalizada) || 
-                c.medicoNome.toLowerCase().includes(buscaNormalizada)
+                c.paciente.nome.toLowerCase().includes(buscaNormalizada) || 
+                c.medico.nome.toLowerCase().includes(buscaNormalizada)
             );
         }
-        lista.sort((a, b) => new Date(a.dataConsulta) - new Date(b.dataConsulta));
+        // ✅ Ordenação: Usando consulta.dataHora
+        lista.sort((a, b) => new Date(a.dataHora) - new Date(b.dataHora));
         return lista;
     }, [consultas, filtroStatus, filtroBusca]);
 
@@ -82,7 +82,7 @@ function AdminConsultas() {
     const getStatusClasses = (status) => {
         switch (status) {
             case 'AGENDADA': return 'bg-blue-100 text-blue-800';
-            case 'FINALIZADA': return 'bg-green-100 text-green-800';
+            case 'REALIZADA': return 'bg-green-100 text-green-800'; 
             case 'CANCELADA': return 'bg-red-100 text-red-800';
             default: return 'bg-gray-100 text-gray-800';
         }
@@ -95,17 +95,17 @@ function AdminConsultas() {
         <div className="p-4">
             {/* TÍTULO COM BOTÃO DE CADASTRO */}
             <h2 className="text-2xl font-semibold mb-6 border-b pb-2 flex justify-between items-center">
-                Consultas Agendadas e Ativas
+                Consultas
                 <button 
                     onClick={() => setIsModalOpen(true)}
                     className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition"
-                    title="Agendar nova consulta para um Paciente"
+                    title="Registrar Consulta Finalizada e Histórico"
                 >
-                    + Nova Consulta
+                    + Registrar Consulta
                 </button>
             </h2>
 
-            {/* Filtros e Busca (mantidos) */}
+            {/* Filtros e Busca */}
             <div className="bg-white p-4 shadow-md rounded-lg mb-6 flex space-x-4 items-center">
                 
                 {/* Filtro por Status */}
@@ -116,7 +116,7 @@ function AdminConsultas() {
                 >
                     <option value="AGENDADA">Apenas Agendadas</option>
                     <option value="TODAS">Todos os Status</option>
-                    <option value="FINALIZADA">Finalizadas</option>
+                    <option value="REALIZADA">Realizadas</option>
                     <option value="CANCELADA">Canceladas</option>
                 </select>
 
@@ -128,13 +128,12 @@ function AdminConsultas() {
                     onChange={(e) => setFiltroBusca(e.target.value)}
                     className="border p-2 rounded-lg flex-1"
                 />
-                <span className="text-gray-500">Próximas Consultas: {consultasFiltradas.length}</span>
+                <span className="text-gray-500">Consultas Exibidas: {consultasFiltradas.length}</span>
             </div>
 
-            {/* Tabela de Consultas (mantida) */}
+            {/* Tabela de Consultas */}
             <div className="bg-white shadow-md rounded-lg overflow-hidden">
                 <table className="min-w-full divide-y divide-gray-200">
-                    {/* ... (cabeçalho da tabela) ... */}
                     <thead className="bg-gray-50">
                         <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data/Hora</th>
@@ -148,13 +147,13 @@ function AdminConsultas() {
                         {consultasFiltradas.map((consulta) => (
                             <tr key={consulta.id} className="hover:bg-gray-50">
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    {new Date(consulta.dataConsulta).toLocaleString('pt-BR')} 
+                                    {new Date(consulta.dataHora).toLocaleString('pt-BR')} 
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {consulta.pacienteNome} 
+                                    {consulta.paciente.nome} 
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {consulta.medicoNome} ({consulta.medicoEspecialidade})
+                                    {consulta.medico.nome} ({consulta.medico.especialidade})
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-center">
                                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClasses(consulta.status)}`}>
@@ -165,7 +164,7 @@ function AdminConsultas() {
                                     {/* Botão de Cancelar */}
                                     {consulta.status === 'AGENDADA' && (
                                         <button 
-                                            onClick={() => handleCancelar(consulta.id, consulta.pacienteNome)}
+                                            onClick={() => handleCancelar(consulta.id, consulta.paciente.nome)}
                                             className="text-red-600 hover:text-red-900" 
                                             title="Cancelar Consulta"
                                         >

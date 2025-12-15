@@ -17,8 +17,9 @@ const getAuthHeaders = () => {
 
 // ----------------------------------------------------
 // Função Auxiliar para Extração Robusta de Mensagens de Erro
+// 🚨 CORREÇÃO: ADICIONANDO 'EXPORT' AQUI para que o agendamentoIntegradoService.js possa importar
 // ----------------------------------------------------
-const extractErrorMessage = async (response) => {
+export const extractErrorMessage = async (response) => {
     // Se não for um erro 2xx, tenta extrair a mensagem detalhada do corpo
     if (!response.ok) {
         // Tenta ler o corpo JSON
@@ -62,6 +63,7 @@ const extractErrorMessage = async (response) => {
 // 1. AGENDAR Consulta (POST /api/consultas)
 // ----------------------------------------------------
 export const agendarConsulta = async (agendamentoData) => { 
+// ... (código inalterado)
     try {
         const response = await fetch(CONSULTAS_API_BASE_URL, {
             method: 'POST',
@@ -85,6 +87,7 @@ export const agendarConsulta = async (agendamentoData) => {
 // 2. LISTAR Todas as Consultas (GET /api/consultas)
 // ----------------------------------------------------
 export const listarTodasConsultas = async () => {
+// ... (código inalterado)
     try {
         const response = await fetch(CONSULTAS_API_BASE_URL, {
             method: 'GET',
@@ -107,6 +110,7 @@ export const listarTodasConsultas = async () => {
 // 3. BUSCAR Consulta por ID (GET /api/consultas/{id})
 // ----------------------------------------------------
 export const buscarConsultaPorId = async (id) => {
+// ... (código inalterado)
     try {
         const response = await fetch(`${CONSULTAS_API_BASE_URL}/${id}`, {
             method: 'GET',
@@ -129,6 +133,7 @@ export const buscarConsultaPorId = async (id) => {
 // 4. CANCELAR Consulta (PUT /api/consultas/{id}/cancelar)
 // ----------------------------------------------------
 export const cancelarConsulta = async (id) => {
+// ... (código inalterado)
     try {
         const response = await fetch(`${CONSULTAS_API_BASE_URL}/${id}/cancelar`, {
             method: 'PUT',
@@ -152,6 +157,7 @@ export const cancelarConsulta = async (id) => {
 // 5. FINALIZAR Consulta (PUT /api/consultas/{id}/finalizar)
 // ----------------------------------------------------
 export const finalizarConsulta = async (id) => {
+// ... (código inalterado)
     try {
         const response = await fetch(`${CONSULTAS_API_BASE_URL}/${id}/finalizar`, {
             method: 'PUT',
@@ -174,6 +180,7 @@ export const finalizarConsulta = async (id) => {
 // 6. REMOVER Consulta (DELETE /api/consultas/{id})
 // ----------------------------------------------------
 export const removerConsulta = async (id) => {
+// ... (código inalterado)
     try {
         const response = await fetch(`${CONSULTAS_API_BASE_URL}/${id}`, {
             method: 'DELETE',
