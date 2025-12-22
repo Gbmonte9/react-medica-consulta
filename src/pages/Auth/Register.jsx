@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { criarPaciente } from '../api/pacienteService'; // Importação CORRETA
+import { criarPaciente } from '../../api/pacienteService'; // Importação CORRETA
 
 function Register() {
     // 1. Estado de Formulário

@@ -1,26 +1,21 @@
-// src/pages/Admin/AdminConsultas.jsx (CÓDIGO CORRETO PARA COPIAR)
 import React, { useState, useEffect, useMemo } from 'react';
-
 import { 
     listarTodasConsultas, 
     cancelarConsulta,
 } from '../../api/consultasService'; 
-
-// 🚨 CORREÇÃO DE CAMINHO: O modal foi movido para a pasta components/modals
-import AdminAgendamentoModal from '../../pages/Admin/AdminAgendamentoModal'; 
-
+import AdminAgendamentoModal from '../../components/modals/AdminAgendamentoModal'; 
 
 function AdminConsultas() {
     const [consultas, setConsultas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [isModalOpen, setIsModalOpen] = useState(false); // Estado para o Modal
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [consultaParaEditar, setConsultaParaEditar] = useState(null);
     
-    // Filtro inicial focado nas consultas ativas/agendadas
-    const [filtroStatus, setFiltroStatus] = useState('AGENDADA'); 
+    // 1. AJUSTE: Agora inicia com 'TODAS' para mostrar tudo ao entrar
+    const [filtroStatus, setFiltroStatus] = useState('TODAS'); 
     const [filtroBusca, setFiltroBusca] = useState(''); 
 
-    // Lógica de Carregamento de Dados
     const fetchConsultas = async () => {
         try {
             setLoading(true);
@@ -28,57 +23,61 @@ function AdminConsultas() {
             const data = await listarTodasConsultas();
             setConsultas(data);
         } catch (err) {
-            console.error("Erro ao buscar consultas ativas:", err);
-            setError(err.message || 'Erro desconhecido ao carregar a lista de consultas.');
+            console.error("Erro ao buscar consultas:", err);
+            setError(err.message || 'Erro ao carregar a lista de consultas.');
         } finally {
             setLoading(false);
         }
-    };
-
-    // Callback para recarregar a lista após um agendamento bem-sucedido
-    const handleAgendamentoSuccess = () => {
-        setIsModalOpen(false); // Fecha o modal
-        fetchConsultas(); // Recarrega os dados
     };
 
     useEffect(() => {
         fetchConsultas();
     }, []);
 
-    // Lógica de Ações (Cancelar)
+    const handleAgendamentoSuccess = () => {
+        setIsModalOpen(false);
+        setConsultaParaEditar(null);
+        fetchConsultas(); 
+    };
+
+    const handleEditar = (consulta) => {
+        setConsultaParaEditar(consulta);
+        setIsModalOpen(true);
+    };
+
     const handleCancelar = async (id, pacienteNome) => {
-        if (!window.confirm(`Tem certeza que deseja CANCELAR a consulta do(a) paciente ${pacienteNome}?`)) {
+        if (!window.confirm(`Deseja CANCELAR a consulta do(a) paciente ${pacienteNome}?`)) {
             return;
         }
         try {
             await cancelarConsulta(id);
             fetchConsultas(); 
-            alert(`Consulta do(a) paciente ${pacienteNome} cancelada com sucesso.`);
+            alert(`Consulta cancelada com sucesso.`);
         } catch (err) {
-            console.error("Erro ao cancelar consulta:", err);
-            alert(`Falha ao cancelar consulta: ${err.message}`);
+            alert(`Falha ao cancelar: ${err.message}`);
         }
     };
     
-    // Lógica de Filtragem (mantida)
     const consultasFiltradas = useMemo(() => {
-        let lista = consultas;
+        let lista = [...consultas];
+        
         if (filtroStatus !== 'TODAS') {
             lista = lista.filter(c => c.status === filtroStatus);
         }
+
         if (filtroBusca) {
-            const buscaNormalizada = filtroBusca.toLowerCase();
+            const busca = filtroBusca.toLowerCase();
             lista = lista.filter(c => 
-                c.paciente.nome.toLowerCase().includes(buscaNormalizada) || 
-                c.medico.nome.toLowerCase().includes(buscaNormalizada)
+                (c.paciente?.nome?.toLowerCase().includes(busca)) || 
+                (c.medico?.nome?.toLowerCase().includes(busca))
             );
         }
-        // ✅ Ordenação: Usando consulta.dataHora
-        lista.sort((a, b) => new Date(a.dataHora) - new Date(b.dataHora));
+
+        // Ordenar por data (mais recentes primeiro)
+        lista.sort((a, b) => new Date(b.dataHora) - new Date(a.dataHora));
         return lista;
     }, [consultas, filtroStatus, filtroBusca]);
 
-    // Funções Auxiliares de Visual (Status)
     const getStatusClasses = (status) => {
         switch (status) {
             case 'AGENDADA': return 'bg-blue-100 text-blue-800';
@@ -88,101 +87,118 @@ function AdminConsultas() {
         }
     };
 
-    if (loading) return <div className="p-4 text-center text-blue-600">Carregando consultas ativas...</div>;
-    if (error) return <div className="p-4 text-red-700 bg-red-100 border border-red-400 rounded-md">Erro: {error}</div>;
+    if (loading) return <div className="p-4 text-center text-blue-600 font-bold">Carregando consultas...</div>;
+    if (error) return <div className="p-4 text-red-700 bg-red-100 rounded m-4 border border-red-300">Erro: {error}</div>;
 
     return (
-        <div className="p-4">
-            {/* TÍTULO COM BOTÃO DE CADASTRO */}
-            <h2 className="text-2xl font-semibold mb-6 border-b pb-2 flex justify-between items-center">
-                Consultas
+        <div className="p-6 bg-gray-50 min-h-screen">
+            <header className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-800">Gerenciamento de Consultas</h2>
                 <button 
-                    onClick={() => setIsModalOpen(true)}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition"
-                    title="Registrar Consulta Finalizada e Histórico"
+                    onClick={() => { setConsultaParaEditar(null); setIsModalOpen(true); }}
+                    className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition shadow-md"
                 >
                     + Registrar Consulta
                 </button>
-            </h2>
+            </header>
 
-            {/* Filtros e Busca */}
-            <div className="bg-white p-4 shadow-md rounded-lg mb-6 flex space-x-4 items-center">
-                
-                {/* Filtro por Status */}
-                <select 
-                    value={filtroStatus}
-                    onChange={(e) => setFiltroStatus(e.target.value)}
-                    className="border p-2 rounded-lg"
-                >
-                    <option value="AGENDADA">Apenas Agendadas</option>
-                    <option value="TODAS">Todos os Status</option>
-                    <option value="REALIZADA">Realizadas</option>
-                    <option value="CANCELADA">Canceladas</option>
-                </select>
+            {/* Filtros */}
+            <div className="bg-white p-4 shadow-sm rounded-lg mb-6 flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 items-center border border-gray-100">
+                <div className="w-full md:w-64">
+                    <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Filtrar por Status</label>
+                    <select 
+                        value={filtroStatus}
+                        onChange={(e) => setFiltroStatus(e.target.value)}
+                        className="border p-2 rounded-lg w-full bg-gray-50"
+                    >
+                        <option value="TODAS">Todos os Status</option>
+                        <option value="AGENDADA">Agendadas</option>
+                        <option value="REALIZADA">Realizadas</option>
+                        <option value="CANCELADA">Canceladas</option>
+                    </select>
+                </div>
 
-                {/* Filtro por Busca */}
-                <input
-                    type="text"
-                    placeholder="Buscar por Paciente ou Médico..."
-                    value={filtroBusca}
-                    onChange={(e) => setFiltroBusca(e.target.value)}
-                    className="border p-2 rounded-lg flex-1"
-                />
-                <span className="text-gray-500">Consultas Exibidas: {consultasFiltradas.length}</span>
+                <div className="flex-1 w-full">
+                    <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Pesquisar</label>
+                    <input
+                        type="text"
+                        placeholder="Buscar por nome do paciente ou médico..."
+                        value={filtroBusca}
+                        onChange={(e) => setFiltroBusca(e.target.value)}
+                        className="border p-2 rounded-lg w-full bg-gray-50"
+                    />
+                </div>
             </div>
 
-            {/* Tabela de Consultas */}
-            <div className="bg-white shadow-md rounded-lg overflow-hidden">
+            {/* Tabela */}
+            <div className="bg-white shadow-md rounded-xl overflow-hidden border border-gray-200">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data/Hora</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paciente</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Médico</th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Data e Hora</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Paciente</th>
+                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Médico</th>
+                            <th className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase">Status</th>
+                            <th className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase">Ações</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                        {consultasFiltradas.map((consulta) => (
-                            <tr key={consulta.id} className="hover:bg-gray-50">
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    {new Date(consulta.dataHora).toLocaleString('pt-BR')} 
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {consulta.paciente.nome} 
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {consulta.medico.nome} ({consulta.medico.especialidade})
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-center">
-                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClasses(consulta.status)}`}>
-                                        {consulta.status}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-center space-x-2">
-                                    {/* Botão de Cancelar */}
-                                    {consulta.status === 'AGENDADA' && (
-                                        <button 
-                                            onClick={() => handleCancelar(consulta.id, consulta.paciente.nome)}
-                                            className="text-red-600 hover:text-red-900" 
-                                            title="Cancelar Consulta"
-                                        >
-                                            ❌
-                                        </button>
-                                    )}
-                                    
-                                </td>
+                        {consultasFiltradas.length === 0 ? (
+                            <tr>
+                                <td colSpan="5" className="px-6 py-10 text-center text-gray-400">Nenhuma consulta encontrada.</td>
                             </tr>
-                        ))}
+                        ) : (
+                            consultasFiltradas.map((consulta) => (
+                                <tr key={consulta.id} className="hover:bg-blue-50/50 transition-colors">
+                                    <td className="px-6 py-4 text-sm text-gray-700">
+                                        {new Date(consulta.dataHora).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })} 
+                                    </td>
+                                    <td className="px-6 py-4 text-sm font-semibold text-gray-900">
+                                        {consulta.paciente?.nome || 'N/A'} 
+                                    </td>
+                                    <td className="px-6 py-4 text-sm text-gray-600">
+                                        {consulta.medico?.nome || 'N/A'}
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <span className={`px-3 py-1 text-xs font-bold rounded-full ${getStatusClasses(consulta.status)}`}>
+                                            {consulta.status}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-center flex justify-center space-x-3">
+                                        {/* Editar (Disponível apenas se não estiver cancelada) */}
+                                        {consulta.status !== 'CANCELADA' && (
+                                            <button 
+                                                onClick={() => handleEditar(consulta)}
+                                                className="text-blue-600 hover:text-blue-800 text-lg"
+                                                title="Editar Agendamento"
+                                            >
+                                                ✏️
+                                            </button>
+                                        )}
+                                        
+                                        {/* Cancelar (Apenas consultas AGENDADAS) */}
+                                        {consulta.status === 'AGENDADA' && (
+                                            <button 
+                                                onClick={() => handleCancelar(consulta.id, consulta.paciente?.nome)}
+                                                className="text-red-600 hover:text-red-800 text-lg"
+                                                title="Cancelar Consulta"
+                                            >
+                                                ❌
+                                            </button>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))
+                        )}
                     </tbody>
                 </table>
             </div>
 
-            {/* INTEGRAÇÃO DO MODAL */}
+            {/* Modal de Agendamento/Edição */}
             <AdminAgendamentoModal 
                 isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                consulta={consultaParaEditar}
+                onClose={() => { setIsModalOpen(false); setConsultaParaEditar(null); }}
                 onAgendamentoSuccess={handleAgendamentoSuccess}
             />
         </div>

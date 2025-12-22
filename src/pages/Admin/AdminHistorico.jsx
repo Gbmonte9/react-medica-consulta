@@ -1,225 +1,162 @@
-// src/pages/Admin/AdminHistorico.jsx
-
 import React, { useState, useEffect, useMemo } from 'react';
-
-// 🎯 CORREÇÃO NO CAMINHO DE IMPORTAÇÃO:
-// Assumindo que o modal está em src/components/HistoricoRegistroModal
-// (Sobe de /Admin para /pages, sobe para /src, e desce para /components)
-import HistoricoRegistroModal from '../../pages/Historico/HistoricoRegistroModal'; 
-// SE ESTIVER EM /src/pages/Historico, USE: import HistoricoRegistroModal from '../Historico/HistoricoRegistroModal'; 
-// A versão abaixo é a mais comum para componentes reutilizáveis.
-
-// Importamos a função de serviço para listar e cancelar
-import { 
-    listarTodasConsultas, 
-    cancelarConsulta,
-    // removerConsulta (Se o admin precisar deletar permanentemente)
-} from '../../api/consultasService'; 
-
+import HistoricoRegistroModal from '../../components/modals/HistoricoRegistroModal'; 
+import { listarTodasConsultas, cancelarConsulta } from '../../api/consultasService'; 
+import { useLoading } from '../../contexts/LoadingContext';
 
 function AdminHistorico() {
-    
-    // 1. ESTADOS ESSENCIAIS 
     const [consultas, setConsultas] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     
-    // 2. Estados de Filtro 
     const [filtroStatus, setFiltroStatus] = useState('TODAS'); 
     const [filtroBusca, setFiltroBusca] = useState(''); 
-
-    // 3. ESTADOS PARA O MODAL DE HISTÓRICO
     const [isHistoricoModalOpen, setIsHistoricoModalOpen] = useState(false);
-    const [consultaIdParaHistorico, setConsultaIdParaHistorico] = useState(null);
+    
+    // ALTERADO: Agora guardamos o objeto da consulta inteira para passar ao modal
+    const [consultaSelecionada, setConsultaSelecionada] = useState(null);
 
-    // --------------------------------------------------------------------
-    // Lógica de Carregamento de Dados 
-    // --------------------------------------------------------------------
+    const { setIsLoading } = useLoading();
+
     const fetchConsultas = async () => {
         try {
-            setLoading(true);
+            setIsLoading(true);
             setError(null);
-            
             const data = await listarTodasConsultas();
-            setConsultas(data);
-            
+            setConsultas(Array.isArray(data) ? data : []);
         } catch (err) {
-            console.error("Erro ao buscar histórico de consultas:", err);
-            setError(err.message || 'Erro desconhecido ao carregar histórico.');
+            console.error("Erro ao buscar consultas:", err);
+            setError(err.message || 'Erro ao carregar histórico.');
         } finally {
-            setLoading(false);
+            setIsLoading(false);
         }
     };
 
-    useEffect(() => {
-        fetchConsultas();
+    useEffect(() => { 
+        fetchConsultas(); 
     }, []);
 
-    // --------------------------------------------------------------------
-    // Lógica de Ações (Cancelar) 
-    // --------------------------------------------------------------------
     const handleCancelar = async (id, pacienteNome) => {
-        if (!window.confirm(`Tem certeza que deseja CANCELAR a consulta do(a) paciente ${pacienteNome}?`)) {
-            return;
-        }
-
+        if (!window.confirm(`Deseja realmente cancelar a consulta de ${pacienteNome}?`)) return;
         try {
+            setIsLoading(true);
             await cancelarConsulta(id);
-            fetchConsultas(); 
-            alert(`Consulta do(a) paciente ${pacienteNome} cancelada com sucesso.`);
+            await fetchConsultas();
         } catch (err) {
-            console.error("Erro ao cancelar consulta:", err);
-            alert(`Falha ao cancelar consulta: ${err.message}`);
+            alert(`Erro ao cancelar: ${err.message}`);
+        } finally {
+            setIsLoading(false);
         }
     };
     
-    // --------------------------------------------------------------------
-    // Lógica de Filtragem 
-    // --------------------------------------------------------------------
     const consultasFiltradas = useMemo(() => {
-        let lista = consultas;
-
-        // 1. Filtrar por Status
-        if (filtroStatus !== 'TODAS') {
-            lista = lista.filter(c => c.status === filtroStatus);
-        }
-
-        // 2. Filtrar por Busca (Nome do Paciente ou Médico)
-        if (filtroBusca) {
-            const buscaNormalizada = filtroBusca.toLowerCase();
-            lista = lista.filter(c => 
-                c.pacienteNome.toLowerCase().includes(buscaNormalizada) || 
-                c.medicoNome.toLowerCase().includes(buscaNormalizada)
-            );
-        }
-
-        return lista;
+        return consultas
+            .filter(c => {
+                const matchesStatus = filtroStatus === 'TODAS' || c.status === filtroStatus;
+                const nomePaciente = (c.paciente?.nomeUsuario || "").toLowerCase();
+                const nomeMedico = (c.medico?.nomeUsuario || "").toLowerCase();
+                const busca = filtroBusca.toLowerCase();
+                
+                return matchesStatus && (nomePaciente.includes(busca) || nomeMedico.includes(busca));
+            })
+            .sort((a, b) => new Date(b.dataHora) - new Date(a.dataHora));
     }, [consultas, filtroStatus, filtroBusca]);
 
-    // --------------------------------------------------------------------
-    // 🎯 NOVA LÓGICA: Abrir Modal de Histórico
-    // --------------------------------------------------------------------
-    const handleOpenHistoricoModal = (consultaId) => {
-        // Garantir que a consultaId não é nula antes de abrir
-        if (consultaId) {
-            setConsultaIdParaHistorico(consultaId);
-            setIsHistoricoModalOpen(true);
-        } else {
-            console.error("ID da consulta não fornecido para o histórico.");
-        }
+    const handleOpenHistoricoModal = (consulta) => {
+        console.log("CONTEÚDO DA CONSULTA:", consulta); // Adicione isso aqui!
+        setConsultaSelecionada(consulta);
+        setIsHistoricoModalOpen(true);
     };
 
-
-    // --------------------------------------------------------------------
-    // Funções Auxiliares de Visual (Status)
-    // --------------------------------------------------------------------
     const getStatusClasses = (status) => {
         switch (status) {
-            case 'AGENDADA': return 'bg-blue-100 text-blue-800';
-            case 'FINALIZADA': return 'bg-green-100 text-green-800';
-            case 'CANCELADA': return 'bg-red-100 text-red-800';
+            case 'AGENDADA': return 'bg-blue-100 text-blue-800 border-blue-200';
+            case 'REALIZADA': return 'bg-green-100 text-green-800 border-green-200';
+            case 'CANCELADA': return 'bg-red-100 text-red-800 border-red-200';
             default: return 'bg-gray-100 text-gray-800';
         }
     };
 
-    // CONDIÇÃO DE RENDERIZAÇÃO 
-    if (loading) return <div className="p-4 text-center text-blue-600">Carregando histórico de consultas...</div>;
-    if (error) return <div className="p-4 text-red-700 bg-red-100 border border-red-400 rounded-md">Erro: {error}</div>;
-
     return (
-        <div className="p-4">
-            <h2 className="text-2xl font-semibold mb-6 border-b pb-2">Histórico de Consultas</h2>
+        <div className="p-6 bg-gray-50 min-h-screen">
+            <h2 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-4">
+                📜 Histórico Geral de Consultas
+            </h2>
 
-            {/* Filtros e Busca */}
-            <div className="bg-white p-4 shadow-md rounded-lg mb-6 flex space-x-4 items-center">
-                
-                {/* Filtro por Status */}
-                <select 
-                    value={filtroStatus}
-                    onChange={(e) => setFiltroStatus(e.target.value)}
-                    className="border p-2 rounded-lg"
-                >
-                    <option value="TODAS">Todos os Status</option>
-                    <option value="AGENDADA">Agendadas</option>
-                    <option value="FINALIZADA">Finalizadas</option>
-                    <option value="CANCELADA">Canceladas</option>
-                </select>
-
-                {/* Filtro por Busca */}
-                <input
-                    type="text"
-                    placeholder="Buscar por Paciente ou Médico..."
-                    value={filtroBusca}
-                    onChange={(e) => setFiltroBusca(e.target.value)}
-                    className="border p-2 rounded-lg flex-1"
-                />
-                <span className="text-gray-500">Total: {consultasFiltradas.length}</span>
+            {/* Filtros */}
+            <div className="bg-white p-4 shadow-sm rounded-xl mb-6 flex flex-col md:flex-row gap-4 border border-gray-200">
+                <div className="w-full md:w-48">
+                    <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Status</label>
+                    <select 
+                        value={filtroStatus}
+                        onChange={(e) => setFiltroStatus(e.target.value)}
+                        className="w-full border p-2 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        <option value="TODAS">Todos</option>
+                        <option value="AGENDADA">Agendadas</option>
+                        <option value="REALIZADA">Realizadas</option>
+                        <option value="CANCELADA">Canceladas</option>
+                    </select>
+                </div>
+                <div className="flex-1">
+                    <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Pesquisar</label>
+                    <input
+                        type="text"
+                        placeholder="Buscar por Paciente ou Médico..."
+                        value={filtroBusca}
+                        onChange={(e) => setFiltroBusca(e.target.value)}
+                        className="w-full border p-2 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
             </div>
 
-            {/* Tabela de Consultas */}
-            <div className="bg-white shadow-md rounded-lg overflow-hidden">
+            {/* Tabela */}
+            <div className="bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-200">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Data/Hora</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paciente</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Médico (Especialidade)</th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                            <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Data e Hora</th>
+                            <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Paciente</th>
+                            <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Médico</th>
+                            <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase">Status</th>
+                            <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase">Ações</th>
                         </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                    <tbody className="divide-y divide-gray-100">
                         {consultasFiltradas.map((consulta) => (
                             <tr key={consulta.id} className="hover:bg-gray-50">
-                                
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                    {new Date(consulta.dataConsulta).toLocaleString('pt-BR')} 
+                                <td className="px-6 py-4 text-sm text-gray-700">
+                                    {new Date(consulta.dataHora).toLocaleString('pt-BR')} 
                                 </td>
-                                
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {consulta.pacienteNome} 
+                                <td className="px-6 py-4 text-sm font-semibold text-gray-900">
+                                    {consulta.paciente?.nomeUsuario || "N/A"} 
                                 </td>
-                                
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {consulta.medicoNome} ({consulta.medicoEspecialidade})
+                                <td className="px-6 py-4 text-sm text-gray-600">
+                                    {consulta.medico?.nomeUsuario || "N/A"}
                                 </td>
-                                
-                                <td className="px-6 py-4 whitespace-nowrap text-center">
-                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClasses(consulta.status)}`}>
+                                <td className="px-6 py-4 text-center">
+                                    <span className={`px-3 py-1 text-xs font-bold rounded-full border ${getStatusClasses(consulta.status)}`}>
                                         {consulta.status}
                                     </span>
                                 </td>
-                                
-                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-center space-x-2">
-                                    <button 
-                                        className="text-gray-600 hover:text-gray-900" 
-                                        title="Detalhes"
-                                    >
-                                        👁️
-                                    </button>
-                                    
-                                    {/* 2. Botão de Registrar Histórico (Visível se FINALIZADA) */}
-                                    {(consulta.status === 'FINALIZADA' || consulta.status === 'REALIZADA') && (
-                                        <button 
-                                            onClick={() => handleOpenHistoricoModal(consulta.id)}
-                                            className="text-green-600 hover:text-green-900 font-semibold" 
-                                            title="Registrar Histórico/Prontuário"
-                                        >
-                                            📝
-                                        </button>
-                                    )}
-
-                                    {/* 3. Botão de Cancelar (APENAS SE AGENDADA) */}
-                                    {consulta.status === 'AGENDADA' && (
-                                        <button 
-                                            onClick={() => handleCancelar(consulta.id, consulta.pacienteNome)}
-                                            className="text-red-600 hover:text-red-900" 
-                                            title="Cancelar Consulta"
-                                        >
-                                            ❌
-                                        </button>
-                                    )}
-                                    
+                                <td className="px-6 py-4 text-center">
+                                    <div className="flex justify-center space-x-2">
+                                        {consulta.status !== 'CANCELADA' && (
+                                            <button 
+                                                // ALTERADO: Passa o objeto consulta
+                                                onClick={() => handleOpenHistoricoModal(consulta)}
+                                                className="flex items-center gap-1 bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-600 hover:text-white transition-all text-sm font-bold"
+                                            >
+                                                <span>{consulta.status === 'REALIZADA' ? '👁️ Ver/Editar' : '📝 Registrar'}</span>
+                                            </button>
+                                        )}
+                                        {consulta.status === 'AGENDADA' && (
+                                            <button 
+                                                onClick={() => handleCancelar(consulta.id, consulta.paciente?.nomeUsuario)}
+                                                className="flex items-center gap-1 bg-red-50 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-600 hover:text-white transition-all text-sm font-bold"
+                                            >
+                                                <span>❌</span> Cancelar
+                                            </button>
+                                        )}
+                                    </div>
                                 </td>
                             </tr>
                         ))}
@@ -227,18 +164,16 @@ function AdminHistorico() {
                 </table>
             </div>
             
-            {/* 🎯 INCLUSÃO DO MODAL DE REGISTRO DE HISTÓRICO */}
             <HistoricoRegistroModal
                 isOpen={isHistoricoModalOpen}
                 onClose={() => setIsHistoricoModalOpen(false)}
-                consultaId={consultaIdParaHistorico}
+                // ALTERADO: Passa a consulta completa para o modal
+                consulta={consultaSelecionada}
                 onHistoricoSuccess={() => {
-                    // Após salvar o histórico, feche o modal e recarregue a lista 
                     setIsHistoricoModalOpen(false);
                     fetchConsultas(); 
                 }}
             />
-
         </div>
     );
 }
