@@ -11,6 +11,7 @@ function AdminAgendamentoModal({ isOpen, consulta, onClose, onAgendamentoSuccess
     const [selectedPacienteId, setSelectedPacienteId] = useState('');
     const [dataHora, setDataHora] = useState('');
     const [selectedStatus, setSelectedStatus] = useState('AGENDADA');
+    const [motivo, setMotivo] = useState(''); // NOVO ESTADO
     const [observacoes, setObservacoes] = useState('');
     const [receita, setReceita] = useState('');
     const [loading, setLoading] = useState(false);
@@ -23,7 +24,7 @@ function AdminAgendamentoModal({ isOpen, consulta, onClose, onAgendamentoSuccess
                     const [mData, pData] = await Promise.all([listarMedicos(), listarPacientes()]);
                     setMedicos(mData || []);
                     setPacientes(pData || []);
-                } catch (err) { setError('Erro ao carregar dados.'); }
+                } catch (err) { setError('Erro ao carregar médicos e pacientes.'); }
             };
             fetchData();
         }
@@ -35,12 +36,14 @@ function AdminAgendamentoModal({ isOpen, consulta, onClose, onAgendamentoSuccess
                 setSelectedPacienteId(consulta.paciente?.id || '');
                 setSelectedMedicoId(consulta.medico?.id || '');
                 setSelectedStatus(consulta.status || 'AGENDADA');
+                setMotivo(consulta.motivo || ''); // CARREGA MOTIVO EXISTENTE
                 setObservacoes(consulta.historico?.observacoes || '');
                 setReceita(consulta.historico?.receita || '');
                 if (consulta.dataHora) setDataHora(consulta.dataHora.substring(0, 16));
             } else {
                 setSelectedPacienteId(''); setSelectedMedicoId(''); setDataHora('');
-                setSelectedStatus('AGENDADA'); setObservacoes(''); setReceita(''); setError(null);
+                setSelectedStatus('AGENDADA'); setMotivo(''); setObservacoes(''); 
+                setReceita(''); setError(null);
             }
         }
     }, [consulta, isOpen]);
@@ -48,24 +51,36 @@ function AdminAgendamentoModal({ isOpen, consulta, onClose, onAgendamentoSuccess
     const handleAgendar = async (e) => {
         e.preventDefault();
         setLoading(true);
+        setError(null);
+
         const payload = { 
-            pacienteId: selectedPacienteId, medicoId: selectedMedicoId, 
+            pacienteId: selectedPacienteId, 
+            medicoId: selectedMedicoId, 
             dataHora: dataHora.includes(':00') ? dataHora : `${dataHora}:00`,
-            status: selectedStatus, observacoes, receita 
+            status: selectedStatus, 
+            motivo: motivo, // ENVIANDO MOTIVO PARA O BACKEND
+            observacoes, 
+            receita 
         };
 
         try {
-            if (consulta?.id) { await atualizarConsulta(consulta.id, payload); }
-            else {
-                if (selectedStatus === 'REALIZADA') await agendarEFinalizarConsulta(payload);
-                else {
+            if (consulta?.id) { 
+                await atualizarConsulta(consulta.id, payload); 
+            } else {
+                if (selectedStatus === 'REALIZADA') {
+                    await agendarEFinalizarConsulta(payload);
+                } else {
                     const nova = await agendarConsulta(payload);
                     if (selectedStatus === 'CANCELADA') await cancelarConsulta(nova.id);
                 }
             }
             onAgendamentoSuccess();
-        } catch (err) { setError(err.message); }
-        finally { setLoading(false); }
+            onClose();
+        } catch (err) { 
+            setError(err.message || 'Erro ao processar agendamento.'); 
+        } finally { 
+            setLoading(false); 
+        }
     };
 
     if (!isOpen) return null;
@@ -90,14 +105,14 @@ function AdminAgendamentoModal({ isOpen, consulta, onClose, onAgendamentoSuccess
                                     <label className="form-label small fw-black text-muted uppercase">Paciente</label>
                                     <select value={selectedPacienteId} onChange={(e) => setSelectedPacienteId(e.target.value)} className="form-select border-0 bg-light p-2.5 rounded-3 shadow-none" required>
                                         <option value="">Localizar Paciente...</option>
-                                        {pacientes.map(p => <option key={p.id} value={p.id}>{p.nomeUsuario}</option>)}
+                                        {pacientes.map(p => <option key={p.id} value={p.id}>{p.nome || p.nomeUsuario}</option>)}
                                     </select>
                                 </div>
                                 <div className="col-md-6">
                                     <label className="form-label small fw-black text-muted uppercase">Especialista</label>
                                     <select value={selectedMedicoId} onChange={(e) => setSelectedMedicoId(e.target.value)} className="form-select border-0 bg-light p-2.5 rounded-3 shadow-none" required>
                                         <option value="">Selecionar Médico...</option>
-                                        {medicos.map(m => <option key={m.id} value={m.id}>{m.nomeUsuario}</option>)}
+                                        {medicos.map(m => <option key={m.id} value={m.id}>{m.nome || m.nomeUsuario}</option>)}
                                     </select>
                                 </div>
                                 <div className="col-md-6">
@@ -111,6 +126,17 @@ function AdminAgendamentoModal({ isOpen, consulta, onClose, onAgendamentoSuccess
                                         <option value="REALIZADA">REALIZADA (FINALIZAR AGORA)</option>
                                         <option value="CANCELADA">CANCELADA</option>
                                     </select>
+                                </div>
+
+                                <div className="col-12">
+                                    <label className="form-label small fw-black text-muted uppercase">Motivo da Consulta</label>
+                                    <textarea 
+                                        value={motivo} 
+                                        onChange={(e) => setMotivo(e.target.value)} 
+                                        className="form-control border-0 bg-light p-2.5 rounded-3 shadow-none" 
+                                        rows="2" 
+                                        placeholder="Ex: Check-up de rotina, Dor abdominal, etc..."
+                                    ></textarea>
                                 </div>
 
                                 {selectedStatus === 'REALIZADA' && (
@@ -136,6 +162,7 @@ function AdminAgendamentoModal({ isOpen, consulta, onClose, onAgendamentoSuccess
                     </form>
                 </div>
             </div>
+            <style>{`.fw-black { font-weight: 900; } .uppercase { text-transform: uppercase; }`}</style>
         </div>
     );
 }

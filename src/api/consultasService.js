@@ -1,4 +1,3 @@
-// src/api/consultasService.js
 import { getToken, getUserId } from './authService'; 
 
 const CONSULTAS_API_BASE_URL = 'http://localhost:8080/api/consultas';
@@ -42,31 +41,27 @@ export const extractErrorMessage = async (response) => {
 
 /**
  * Busca as consultas do paciente logado.
- * Rota: GET /api/consultas/paciente/{id}
  */
 export const listarMinhasConsultas = async () => {
-    const token = getToken();
     const userId = getUserId();
     
-    // Esse log vai te mostrar EXATAMENTE a URL que o React está chamando
-    const urlCompleta = `${CONSULTAS_API_BASE_URL}/paciente/${userId}`;
-    console.log("Chamando a URL:", urlCompleta);
+    if (!userId) {
+        throw new Error("Usuário não identificado. Por favor, faça login novamente.");
+    }
 
-    const response = await fetch(urlCompleta, {
+    const response = await fetch(`${CONSULTAS_API_BASE_URL}/paciente/${userId}`, {
         method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        }
+        headers: getAuthHeaders()
     });
 
-    const data = await response.json();
-    return data;
+    const errorMessage = await extractErrorMessage(response);
+    if (errorMessage) throw new Error(errorMessage);
+
+    return await response.json();
 };
 
 /**
  * Agenda uma nova consulta
- * Rota: POST /api/consultas
  */
 export const agendarConsulta = async (agendamentoData) => { 
     const response = await fetch(CONSULTAS_API_BASE_URL, {
@@ -74,66 +69,86 @@ export const agendarConsulta = async (agendamentoData) => {
         headers: getAuthHeaders(),
         body: JSON.stringify(agendamentoData),
     });
+
     const errorMessage = await extractErrorMessage(response);
     if (errorMessage) throw new Error(errorMessage);
+
     return await response.json(); 
 };
 
 /**
+ * ATUALIZA dados de uma consulta existente (ADICIONADO)
+ */
+export const atualizarConsulta = async (id, agendamentoData) => {
+    const response = await fetch(`${CONSULTAS_API_BASE_URL}/${id}`, {
+        method: 'PUT', // Certifique-se que seu Controller aceita PUT para atualização geral se necessário
+        headers: getAuthHeaders(),
+        body: JSON.stringify(agendamentoData),
+    });
+
+    const errorMessage = await extractErrorMessage(response);
+    if (errorMessage) throw new Error(errorMessage);
+
+    if (response.status === 204) return true;
+    return await response.json();
+};
+
+/**
  * Lista todas as consultas (Uso administrativo)
- * Rota: GET /api/consultas
  */
 export const listarTodasConsultas = async () => {
     const response = await fetch(CONSULTAS_API_BASE_URL, {
         method: 'GET',
         headers: getAuthHeaders(),
     });
-    const errorMessage = await extractErrorMessage(response);
-    if (errorMessage) throw new Error(errorMessage);
-    return await response.json(); 
-};
 
-/**
- * Atualiza dados de uma consulta existente
- * Rota: PUT /api/consultas/{id}
- */
-export const atualizarConsulta = async (id, agendamentoData) => {
-    const response = await fetch(`${CONSULTAS_API_BASE_URL}/${id}`, {
-        method: 'PUT',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(agendamentoData),
-    });
     const errorMessage = await extractErrorMessage(response);
     if (errorMessage) throw new Error(errorMessage);
-    
-    if (response.status === 204) return true;
+
     return await response.json(); 
 };
 
 /**
  * Altera o status da consulta para CANCELADA
- * Rota: PUT /api/consultas/{id}/cancelar
  */
 export const cancelarConsulta = async (id) => {
     const response = await fetch(`${CONSULTAS_API_BASE_URL}/${id}/cancelar`, {
         method: 'PUT',
         headers: getAuthHeaders(),
     });
+
     const errorMessage = await extractErrorMessage(response);
     if (errorMessage) throw new Error(errorMessage);
+
+    return true; 
+};
+
+/**
+ * Finaliza uma consulta (REALIZADA)
+ */
+export const finalizarConsulta = async (id) => {
+    const response = await fetch(`${CONSULTAS_API_BASE_URL}/${id}/finalizar`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+    });
+
+    const errorMessage = await extractErrorMessage(response);
+    if (errorMessage) throw new Error(errorMessage);
+
     return true; 
 };
 
 /**
  * Remove fisicamente uma consulta do banco
- * Rota: DELETE /api/consultas/{id}
  */
 export const removerConsulta = async (id) => {
     const response = await fetch(`${CONSULTAS_API_BASE_URL}/${id}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
     });
+
     const errorMessage = await extractErrorMessage(response);
     if (errorMessage) throw new Error(errorMessage);
+
     return true; 
 };

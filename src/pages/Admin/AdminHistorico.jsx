@@ -27,10 +27,10 @@ function AdminHistorico() {
 
     useEffect(() => { fetchConsultas(); }, []);
 
-    // --- FUNÇÃO AUXILIAR PARA PEGAR NOME (Padroniza a busca do nome) ---
+    // --- FUNÇÃO AUXILIAR PARA PADRONIZAR O NOME ---
     const extrairNome = (objeto) => {
         if (!objeto) return "N/A";
-        return objeto.nomeUsuario || objeto.nome || (objeto.usuario ? objeto.usuario.nome : "N/A");
+        return objeto.nome || objeto.nomeUsuario || (objeto.usuario ? objeto.usuario.nome : "N/A");
     };
 
     const handleCancelar = async (id, pacienteNome) => {
@@ -51,12 +51,16 @@ function AdminHistorico() {
             .filter(c => {
                 const matchesStatus = filtroStatus === 'TODAS' || c.status === filtroStatus;
                 
-                // Aplica a mesma lógica de extração no filtro de busca
                 const nomePaciente = extrairNome(c.paciente).toLowerCase();
                 const nomeMedico = extrairNome(c.medico).toLowerCase();
+                const motivo = (c.motivo || "").toLowerCase();
                 const busca = filtroBusca.toLowerCase();
                 
-                return matchesStatus && (nomePaciente.includes(busca) || nomeMedico.includes(busca));
+                return matchesStatus && (
+                    nomePaciente.includes(busca) || 
+                    nomeMedico.includes(busca) || 
+                    motivo.includes(busca)
+                );
             })
             .sort((a, b) => new Date(b.dataHora) - new Date(a.dataHora));
     }, [consultas, filtroStatus, filtroBusca]);
@@ -96,7 +100,7 @@ function AdminHistorico() {
                         </div>
                         <div className="col-12 col-md-9">
                             <label className="form-label fw-black text-muted uppercase" style={{fontSize: '10px'}}>Pesquisa Inteligente</label>
-                            <input type="text" placeholder="Buscar por Paciente ou Especialista..." value={filtroBusca} onChange={(e) => setFiltroBusca(e.target.value)} className="form-control border-0 bg-light rounded-3 shadow-none" />
+                            <input type="text" placeholder="Buscar por Paciente, Médico ou Motivo..." value={filtroBusca} onChange={(e) => setFiltroBusca(e.target.value)} className="form-control border-0 bg-light rounded-3 shadow-none" />
                         </div>
                     </div>
                 </div>
@@ -110,6 +114,7 @@ function AdminHistorico() {
                                 <th className="px-4 py-3 border-0 fw-black text-muted small uppercase">Data/Hora</th>
                                 <th className="px-4 py-3 border-0 fw-black text-muted small uppercase">Paciente</th>
                                 <th className="px-4 py-3 border-0 fw-black text-muted small uppercase">Médico</th>
+                                <th className="px-4 py-3 border-0 fw-black text-muted small uppercase">Motivo</th>
                                 <th className="px-4 py-3 border-0 fw-black text-muted small uppercase text-center">Status</th>
                                 <th className="px-4 py-3 border-0 fw-black text-muted small uppercase text-center">Ações</th>
                             </tr>
@@ -117,24 +122,10 @@ function AdminHistorico() {
                         <tbody className="border-top-0">
                             {consultasFiltradas.length === 0 ? (
                                 <tr>
-                                    <td colSpan="5" className="text-center py-5">
+                                    <td colSpan="6" className="text-center py-5">
                                         <div className="d-flex flex-column align-items-center opacity-50">
-                                            <span style={{ fontSize: '40px' }}>
-                                                {filtroBusca || filtroStatus !== 'TODAS' ? '🔍' : '📅'}
-                                            </span>
-                                            <p className="fw-black text-muted uppercase small tracking-widest mt-2">
-                                                {filtroBusca || filtroStatus !== 'TODAS' 
-                                                    ? 'Nenhuma consulta corresponde aos filtros' 
-                                                    : 'Nenhum registro de consulta encontrado'}
-                                            </p>
-                                            {(filtroBusca || filtroStatus !== 'TODAS') && (
-                                                <button 
-                                                    onClick={() => { setFiltroBusca(''); setFiltroStatus('TODAS'); }}
-                                                    className="btn btn-link btn-sm text-primary fw-bold uppercase text-decoration-none"
-                                                >
-                                                    Limpar Filtros
-                                                </button>
-                                            )}
+                                            <span style={{ fontSize: '40px' }}>🔍</span>
+                                            <p className="fw-black text-muted uppercase small tracking-widest mt-2">Nenhum registro encontrado</p>
                                         </div>
                                     </td>
                                 </tr>
@@ -145,7 +136,7 @@ function AdminHistorico() {
                                             <div className="d-flex flex-column">
                                                 <span>{new Date(consulta.dataHora).toLocaleDateString('pt-BR')}</span>
                                                 <span className="text-muted" style={{fontSize: '10px'}}>
-                                                    {new Date(consulta.dataHora).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}
+                                                    {new Date(consulta.dataHora).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}hs
                                                 </span>
                                             </div>
                                         </td>
@@ -157,6 +148,11 @@ function AdminHistorico() {
                                         <td className="px-4 py-3 text-muted fw-bold small">
                                             {extrairNome(consulta.medico)}
                                         </td>
+                                        <td className="px-4 py-3">
+                                            <div className="text-muted small text-truncate" style={{maxWidth: '140px', fontSize: '11px'}} title={consulta.motivo}>
+                                                {consulta.motivo || <em className="text-light-emphasis">Sem motivo</em>}
+                                            </div>
+                                        </td>
                                         <td className="px-4 py-3 text-center">
                                             <span className={`badge border px-3 py-2 rounded-pill fw-black uppercase ${getStatusStyle(consulta.status)}`} style={{fontSize: '9px'}}>
                                                 {consulta.status}
@@ -166,7 +162,7 @@ function AdminHistorico() {
                                             <div className="d-flex justify-content-center gap-2">
                                                 {consulta.status !== 'CANCELADA' && (
                                                     <button onClick={() => handleOpenHistoricoModal(consulta)} className="btn btn-outline-primary btn-sm rounded-3 fw-black uppercase px-3" style={{fontSize: '10px'}}>
-                                                        {consulta.status === 'REALIZADA' ? '👁️ Ver Detalhes' : '📝 Registrar'}
+                                                        {consulta.status === 'REALIZADA' ? '👁️ Ver Prontuário' : '📝 Evoluir'}
                                                     </button>
                                                 )}
                                                 {consulta.status === 'AGENDADA' && (
@@ -188,12 +184,6 @@ function AdminHistorico() {
                 consulta={consultaSelecionada}
                 onHistoricoSuccess={() => { setIsHistoricoModalOpen(false); fetchConsultas(); }}
             />
-
-            <style>{`
-                .bg-primary-subtle { background-color: #e7f1ff !important; }
-                .bg-success-subtle { background-color: #d1e7dd !important; }
-                .bg-danger-subtle { background-color: #f8d7da !important; }
-            `}</style>
         </div>
     );
 }

@@ -8,19 +8,18 @@ function HistoricoRegistroModal({ isOpen, onClose, consulta, onHistoricoSuccess 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // --- MAPEAMENTO SEGURO DE NOMES ---
+    // --- MAPEAMENTO SEGURO DE DADOS ---
     const nomePaciente = 
-        consulta?.paciente?.nomeUsuario || 
         consulta?.paciente?.nome || 
-        consulta?.pacienteNome || 
+        consulta?.paciente?.nomeUsuario || 
         (consulta?.paciente?.usuario ? consulta.paciente.usuario.nome : "Paciente não identificado");
 
     const nomeMedico = 
-        consulta?.medico?.nomeUsuario || 
         consulta?.medico?.nome || 
-        consulta?.medicoNome || 
+        consulta?.medico?.nomeUsuario || 
         (consulta?.medico?.usuario ? consulta.medico.usuario.nome : "Médico não identificado");
 
+    const motivoConsulta = consulta?.motivo || "Não informado pelo paciente";
     const consultaId = consulta?.id;
 
     useEffect(() => {
@@ -28,6 +27,7 @@ function HistoricoRegistroModal({ isOpen, onClose, consulta, onHistoricoSuccess 
             if (isOpen && consultaId) {
                 try {
                     setLoading(true);
+                    setError(null);
                     const dado = await buscarHistoricoPorConsultaId(consultaId);
                     if (dado) {
                         setObservacoes(dado.observacoes || '');
@@ -37,6 +37,7 @@ function HistoricoRegistroModal({ isOpen, onClose, consulta, onHistoricoSuccess 
                         resetForm(); 
                     }
                 } catch (err) { 
+                    // Se não encontrar histórico, apenas reseta para criação
                     resetForm(); 
                 } finally { 
                     setLoading(false); 
@@ -48,21 +49,40 @@ function HistoricoRegistroModal({ isOpen, onClose, consulta, onHistoricoSuccess 
 
         if (!isOpen) {
             resetForm();
+            setError(null);
         }
     }, [isOpen, consultaId]);
 
-    const resetForm = () => { setObservacoes(''); setReceita(''); setHistoricoId(null); };
+    const resetForm = () => { 
+        setObservacoes(''); 
+        setReceita(''); 
+        setHistoricoId(null); 
+    };
 
     const handleSalvar = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
         setLoading(true);
-        const historicoData = { consultaId, observacoes, receita };
+        setError(null);
+
+        const historicoData = { 
+            consultaId, 
+            observacoes, 
+            receita 
+        };
+
         try {
-            if (historicoId) { await atualizarHistorico(historicoId, historicoData); }
-            else { await registrarHistorico(historicoData); }
+            if (historicoId) { 
+                await atualizarHistorico(historicoId, historicoData); 
+            } else { 
+                await registrarHistorico(historicoData); 
+            }
             onHistoricoSuccess();
-        } catch (err) { setError(err.message); }
-        finally { setLoading(false); }
+            onClose();
+        } catch (err) { 
+            setError(err.message || 'Falha ao salvar o registro clínico.'); 
+        } finally { 
+            setLoading(false); 
+        }
     };
 
     if (!isOpen) return null; 
@@ -80,19 +100,29 @@ function HistoricoRegistroModal({ isOpen, onClose, consulta, onHistoricoSuccess 
                     </div>
                     
                     <div className="modal-body p-0">
-                        {/* Box de Informação do Paciente */}
-                        <div className="bg-light p-4 border-bottom d-flex flex-column flex-md-row justify-content-between gap-3">
-                            <div>
-                                <span className="text-muted fw-bold uppercase" style={{fontSize: '9px'}}>Paciente</span>
-                                <div className="fw-black text-dark text-uppercase">{nomePaciente}</div>
-                            </div>
-                            <div>
-                                <span className="text-muted fw-bold uppercase" style={{fontSize: '9px'}}>Profissional Responsável</span>
-                                <div className="fw-bold text-primary">{nomeMedico}</div>
-                            </div>
-                            <div className="text-md-end">
-                                <span className="text-muted fw-bold uppercase" style={{fontSize: '9px'}}>ID Consulta</span>
-                                <div className="font-monospace small text-secondary">#{consultaId}</div>
+                        {/* Box de Informação do Atendimento */}
+                        <div className="bg-light p-4 border-bottom">
+                            <div className="row g-3">
+                                <div className="col-md-4">
+                                    <span className="text-muted fw-bold uppercase" style={{fontSize: '9px'}}>Paciente</span>
+                                    <div className="fw-black text-dark text-uppercase">{nomePaciente}</div>
+                                </div>
+                                <div className="col-md-4">
+                                    <span className="text-muted fw-bold uppercase" style={{fontSize: '9px'}}>Profissional Responsável</span>
+                                    <div className="fw-bold text-primary">{nomeMedico}</div>
+                                </div>
+                                <div className="col-md-4 text-md-end">
+                                    <span className="text-muted fw-bold uppercase" style={{fontSize: '9px'}}>ID Consulta</span>
+                                    <div className="font-monospace small text-secondary">#{consultaId?.toString().substring(0,8)}...</div>
+                                </div>
+                                
+                                {/* EXIBIÇÃO DO MOTIVO DA CONSULTA - CONTEXTO PARA O MÉDICO */}
+                                <div className="col-12 mt-3">
+                                    <div className="bg-white p-2 px-3 rounded-3 border-start border-4 border-warning shadow-sm">
+                                        <span className="text-muted fw-bold uppercase" style={{fontSize: '9px'}}>Motivo do Agendamento (Queixa Principal)</span>
+                                        <div className="text-dark small fw-medium">{motivoConsulta}</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -103,14 +133,14 @@ function HistoricoRegistroModal({ isOpen, onClose, consulta, onHistoricoSuccess 
                                 <label className="form-label fw-black text-muted uppercase" style={{fontSize: '11px'}}>Observações e Diagnóstico</label>
                                 <textarea rows="5" value={observacoes} onChange={(e) => setObservacoes(e.target.value)} 
                                     className="form-control border-0 bg-light p-3 rounded-3 shadow-none fw-medium" 
-                                    placeholder="Descreva detalhadamente o atendimento..." required />
+                                    placeholder="Descreva detalhadamente o atendimento, sintomas e diagnóstico..." required />
                             </div>
 
                             <div className="mb-3">
                                 <label className="form-label fw-black text-muted uppercase" style={{fontSize: '11px'}}>Receituário / Prescrição</label>
                                 <textarea rows="3" value={receita} onChange={(e) => setReceita(e.target.value)} 
                                     className="form-control border-0 bg-light p-3 rounded-3 shadow-none fw-medium" 
-                                    placeholder="Medicamentos ou orientações de conduta..." />
+                                    placeholder="Medicamentos, dosagens ou orientações de conduta..." />
                             </div>
                         </form>
                     </div>

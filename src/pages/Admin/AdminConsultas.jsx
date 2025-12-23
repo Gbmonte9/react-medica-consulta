@@ -53,7 +53,8 @@ function AdminConsultas() {
             const busca = filtroBusca.toLowerCase();
             lista = lista.filter(c => 
                 (c.paciente?.nome?.toLowerCase().includes(busca)) || 
-                (c.medico?.nome?.toLowerCase().includes(busca))
+                (c.medico?.nome?.toLowerCase().includes(busca)) ||
+                (c.motivo?.toLowerCase().includes(busca)) // BUSCA TAMBÉM PELO MOTIVO
             );
         }
         lista.sort((a, b) => new Date(b.dataHora) - new Date(a.dataHora));
@@ -91,7 +92,6 @@ function AdminConsultas() {
                 </button>
             </div>
 
-            {/* Barra de Filtros Moderna */}
             <div className="card border-0 shadow-sm rounded-4 mb-4">
                 <div className="card-body p-3">
                     <div className="row g-3">
@@ -110,7 +110,7 @@ function AdminConsultas() {
                         <div className="col-12 col-md-9">
                             <input
                                 type="text"
-                                placeholder="Pesquisar por paciente ou especialista..."
+                                placeholder="Pesquisar por paciente, médico ou motivo..."
                                 value={filtroBusca}
                                 onChange={(e) => setFiltroBusca(e.target.value)}
                                 className="form-control border-0 bg-light rounded-3 p-2.5 shadow-none"
@@ -128,6 +128,7 @@ function AdminConsultas() {
                                 <th className="px-4 py-3 border-0 fw-black text-muted small uppercase">Horário</th>
                                 <th className="px-4 py-3 border-0 fw-black text-muted small uppercase">Paciente</th>
                                 <th className="px-4 py-3 border-0 fw-black text-muted small uppercase">Médico</th>
+                                <th className="px-4 py-3 border-0 fw-black text-muted small uppercase">Motivo</th>
                                 <th className="px-4 py-3 border-0 fw-black text-muted small uppercase text-center">Status</th>
                                 <th className="px-4 py-3 border-0 fw-black text-muted small uppercase text-center">Ações</th>
                             </tr>
@@ -135,24 +136,10 @@ function AdminConsultas() {
                         <tbody className="border-top-0">
                             {consultasFiltradas.length === 0 ? (
                                 <tr>
-                                    <td colSpan="5" className="text-center py-5">
+                                    <td colSpan="6" className="text-center py-5">
                                         <div className="d-flex flex-column align-items-center opacity-50">
-                                            <span style={{ fontSize: '40px' }}>
-                                                {filtroBusca || filtroStatus !== 'TODAS' ? '🔍' : '🗓️'}
-                                            </span>
-                                            <p className="fw-black text-muted uppercase small tracking-widest mt-2">
-                                                {filtroBusca || filtroStatus !== 'TODAS' 
-                                                    ? 'Nenhum agendamento encontrado para esta busca' 
-                                                    : 'A agenda está vazia para o período selecionado'}
-                                            </p>
-                                            {(filtroBusca || filtroStatus !== 'TODAS') && (
-                                                <button 
-                                                    onClick={() => { setFiltroBusca(''); setFiltroStatus('TODAS'); }}
-                                                    className="btn btn-link btn-sm text-primary fw-bold uppercase text-decoration-none p-0"
-                                                >
-                                                    Limpar Filtros
-                                                </button>
-                                            )}
+                                            <span style={{ fontSize: '40px' }}>🔍</span>
+                                            <p className="fw-black text-muted uppercase small tracking-widest mt-2">Nenhum agendamento encontrado</p>
                                         </div>
                                     </td>
                                 </tr>
@@ -179,6 +166,12 @@ function AdminConsultas() {
                                                 Dr(a). {consulta.medico?.nome || 'Médico não identificado'}
                                             </div>
                                         </td>
+                                        {/* NOVA COLUNA DE MOTIVO */}
+                                        <td className="px-4 py-3">
+                                            <div className="text-muted small text-truncate" style={{maxWidth: '150px', fontSize: '11px'}} title={consulta.motivo}>
+                                                {consulta.motivo || <em className="text-light-emphasis">Não informado</em>}
+                                            </div>
+                                        </td>
                                         <td className="px-4 py-3 text-center">
                                             <span className={`badge border px-3 py-2 rounded-pill fw-black uppercase ${getStatusStyle(consulta.status)}`} style={{fontSize: '9px'}}>
                                                 {consulta.status}
@@ -190,7 +183,6 @@ function AdminConsultas() {
                                                     <button 
                                                         onClick={() => handleEditar(consulta)} 
                                                         className="btn btn-white btn-sm rounded-3 border shadow-sm px-3 text-primary fw-bold" 
-                                                        title="Editar Agendamento"
                                                         style={{fontSize: '11px'}}
                                                     >
                                                         EDITAR
@@ -200,7 +192,6 @@ function AdminConsultas() {
                                                     <button 
                                                         onClick={() => handleCancelar(consulta.id, consulta.paciente?.nome)} 
                                                         className="btn btn-white btn-sm rounded-3 border shadow-sm px-3 text-danger fw-bold" 
-                                                        title="Cancelar"
                                                         style={{fontSize: '11px'}}
                                                     >
                                                         CANCELAR
@@ -222,11 +213,6 @@ function AdminConsultas() {
                 onClose={() => { setIsModalOpen(false); setConsultaParaEditar(null); }}
                 onAgendamentoSuccess={handleAgendamentoSuccess}
             />
-            <style>{`
-                .bg-primary-subtle { background-color: #e7f1ff !important; }
-                .bg-success-subtle { background-color: #d1e7dd !important; }
-                .bg-danger-subtle { background-color: #f8d7da !important; }
-            `}</style>
         </div>
     );
 }
