@@ -1,8 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-    listarTodasConsultas, 
-    cancelarConsulta,
-} from '../../api/consultasService'; 
+import { listarTodasConsultas, cancelarConsulta } from '../../api/consultasService'; 
 import AdminAgendamentoModal from '../../components/modals/AdminAgendamentoModal'; 
 
 function AdminConsultas() {
@@ -11,28 +8,22 @@ function AdminConsultas() {
     const [error, setError] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [consultaParaEditar, setConsultaParaEditar] = useState(null);
-    
-    // 1. AJUSTE: Agora inicia com 'TODAS' para mostrar tudo ao entrar
     const [filtroStatus, setFiltroStatus] = useState('TODAS'); 
     const [filtroBusca, setFiltroBusca] = useState(''); 
 
     const fetchConsultas = async () => {
         try {
             setLoading(true);
-            setError(null);
             const data = await listarTodasConsultas();
             setConsultas(data);
         } catch (err) {
-            console.error("Erro ao buscar consultas:", err);
-            setError(err.message || 'Erro ao carregar a lista de consultas.');
+            setError(err.message || 'Erro ao carregar consultas.');
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => {
-        fetchConsultas();
-    }, []);
+    useEffect(() => { fetchConsultas(); }, []);
 
     const handleAgendamentoSuccess = () => {
         setIsModalOpen(false);
@@ -46,25 +37,18 @@ function AdminConsultas() {
     };
 
     const handleCancelar = async (id, pacienteNome) => {
-        if (!window.confirm(`Deseja CANCELAR a consulta do(a) paciente ${pacienteNome}?`)) {
-            return;
-        }
+        if (!window.confirm(`Deseja CANCELAR a consulta do(a) paciente ${pacienteNome}?`)) return;
         try {
             await cancelarConsulta(id);
             fetchConsultas(); 
-            alert(`Consulta cancelada com sucesso.`);
         } catch (err) {
-            alert(`Falha ao cancelar: ${err.message}`);
+            alert(`Falha: ${err.message}`);
         }
     };
     
     const consultasFiltradas = useMemo(() => {
         let lista = [...consultas];
-        
-        if (filtroStatus !== 'TODAS') {
-            lista = lista.filter(c => c.status === filtroStatus);
-        }
-
+        if (filtroStatus !== 'TODAS') lista = lista.filter(c => c.status === filtroStatus);
         if (filtroBusca) {
             const busca = filtroBusca.toLowerCase();
             lista = lista.filter(c => 
@@ -72,135 +56,177 @@ function AdminConsultas() {
                 (c.medico?.nome?.toLowerCase().includes(busca))
             );
         }
-
-        // Ordenar por data (mais recentes primeiro)
         lista.sort((a, b) => new Date(b.dataHora) - new Date(a.dataHora));
         return lista;
     }, [consultas, filtroStatus, filtroBusca]);
 
-    const getStatusClasses = (status) => {
+    const getStatusStyle = (status) => {
         switch (status) {
-            case 'AGENDADA': return 'bg-blue-100 text-blue-800';
-            case 'REALIZADA': return 'bg-green-100 text-green-800'; 
-            case 'CANCELADA': return 'bg-red-100 text-red-800';
-            default: return 'bg-gray-100 text-gray-800';
+            case 'AGENDADA': return 'bg-primary-subtle text-primary border-primary-subtle';
+            case 'REALIZADA': return 'bg-success-subtle text-success border-success-subtle'; 
+            case 'CANCELADA': return 'bg-danger-subtle text-danger border-danger-subtle';
+            default: return 'bg-light text-muted border-secondary-subtle';
         }
     };
 
-    if (loading) return <div className="p-4 text-center text-blue-600 font-bold">Carregando consultas...</div>;
-    if (error) return <div className="p-4 text-red-700 bg-red-100 rounded m-4 border border-red-300">Erro: {error}</div>;
+    if (loading) return (
+        <div className="text-center py-5">
+            <div className="spinner-border text-primary" role="status"></div>
+            <p className="mt-2 fw-black text-muted uppercase small tracking-widest">Acessando Agenda...</p>
+        </div>
+    );
 
     return (
-        <div className="p-6 bg-gray-50 min-h-screen">
-            <header className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">Gerenciamento de Consultas</h2>
+        <div className="container-fluid p-0 animate__animated animate__fadeIn">
+            <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 gap-3">
+                <div>
+                    <h2 className="fw-black text-dark uppercase tracking-tighter mb-0">Agenda Geral</h2>
+                    <p className="text-muted small fw-bold uppercase mb-0">Controle de atendimentos e horários</p>
+                </div>
                 <button 
                     onClick={() => { setConsultaParaEditar(null); setIsModalOpen(true); }}
-                    className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition shadow-md"
+                    className="btn btn-primary fw-black uppercase px-4 py-2 rounded-3 shadow-sm"
                 >
                     + Registrar Consulta
                 </button>
-            </header>
+            </div>
 
-            {/* Filtros */}
-            <div className="bg-white p-4 shadow-sm rounded-lg mb-6 flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 items-center border border-gray-100">
-                <div className="w-full md:w-64">
-                    <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Filtrar por Status</label>
-                    <select 
-                        value={filtroStatus}
-                        onChange={(e) => setFiltroStatus(e.target.value)}
-                        className="border p-2 rounded-lg w-full bg-gray-50"
-                    >
-                        <option value="TODAS">Todos os Status</option>
-                        <option value="AGENDADA">Agendadas</option>
-                        <option value="REALIZADA">Realizadas</option>
-                        <option value="CANCELADA">Canceladas</option>
-                    </select>
-                </div>
-
-                <div className="flex-1 w-full">
-                    <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Pesquisar</label>
-                    <input
-                        type="text"
-                        placeholder="Buscar por nome do paciente ou médico..."
-                        value={filtroBusca}
-                        onChange={(e) => setFiltroBusca(e.target.value)}
-                        className="border p-2 rounded-lg w-full bg-gray-50"
-                    />
+            {/* Barra de Filtros Moderna */}
+            <div className="card border-0 shadow-sm rounded-4 mb-4">
+                <div className="card-body p-3">
+                    <div className="row g-3">
+                        <div className="col-12 col-md-3">
+                            <select 
+                                value={filtroStatus}
+                                onChange={(e) => setFiltroStatus(e.target.value)}
+                                className="form-select border-0 bg-light rounded-3 fw-bold text-muted small uppercase p-2.5 shadow-none"
+                            >
+                                <option value="TODAS">Todos os Status</option>
+                                <option value="AGENDADA">Agendadas</option>
+                                <option value="REALIZADA">Realizadas</option>
+                                <option value="CANCELADA">Canceladas</option>
+                            </select>
+                        </div>
+                        <div className="col-12 col-md-9">
+                            <input
+                                type="text"
+                                placeholder="Pesquisar por paciente ou especialista..."
+                                value={filtroBusca}
+                                onChange={(e) => setFiltroBusca(e.target.value)}
+                                className="form-control border-0 bg-light rounded-3 p-2.5 shadow-none"
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* Tabela */}
-            <div className="bg-white shadow-md rounded-xl overflow-hidden border border-gray-200">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Data e Hora</th>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Paciente</th>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Médico</th>
-                            <th className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase">Status</th>
-                            <th className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                        {consultasFiltradas.length === 0 ? (
+            <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div className="table-responsive">
+                    <table className="table table-hover align-middle mb-0">
+                        <thead className="bg-light">
                             <tr>
-                                <td colSpan="5" className="px-6 py-10 text-center text-gray-400">Nenhuma consulta encontrada.</td>
+                                <th className="px-4 py-3 border-0 fw-black text-muted small uppercase">Horário</th>
+                                <th className="px-4 py-3 border-0 fw-black text-muted small uppercase">Paciente</th>
+                                <th className="px-4 py-3 border-0 fw-black text-muted small uppercase">Médico</th>
+                                <th className="px-4 py-3 border-0 fw-black text-muted small uppercase text-center">Status</th>
+                                <th className="px-4 py-3 border-0 fw-black text-muted small uppercase text-center">Ações</th>
                             </tr>
-                        ) : (
-                            consultasFiltradas.map((consulta) => (
-                                <tr key={consulta.id} className="hover:bg-blue-50/50 transition-colors">
-                                    <td className="px-6 py-4 text-sm text-gray-700">
-                                        {new Date(consulta.dataHora).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })} 
-                                    </td>
-                                    <td className="px-6 py-4 text-sm font-semibold text-gray-900">
-                                        {consulta.paciente?.nome || 'N/A'} 
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-gray-600">
-                                        {consulta.medico?.nome || 'N/A'}
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <span className={`px-3 py-1 text-xs font-bold rounded-full ${getStatusClasses(consulta.status)}`}>
-                                            {consulta.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-center flex justify-center space-x-3">
-                                        {/* Editar (Disponível apenas se não estiver cancelada) */}
-                                        {consulta.status !== 'CANCELADA' && (
-                                            <button 
-                                                onClick={() => handleEditar(consulta)}
-                                                className="text-blue-600 hover:text-blue-800 text-lg"
-                                                title="Editar Agendamento"
-                                            >
-                                                ✏️
-                                            </button>
-                                        )}
-                                        
-                                        {/* Cancelar (Apenas consultas AGENDADAS) */}
-                                        {consulta.status === 'AGENDADA' && (
-                                            <button 
-                                                onClick={() => handleCancelar(consulta.id, consulta.paciente?.nome)}
-                                                className="text-red-600 hover:text-red-800 text-lg"
-                                                title="Cancelar Consulta"
-                                            >
-                                                ❌
-                                            </button>
-                                        )}
+                        </thead>
+                        <tbody className="border-top-0">
+                            {consultasFiltradas.length === 0 ? (
+                                <tr>
+                                    <td colSpan="5" className="text-center py-5">
+                                        <div className="d-flex flex-column align-items-center opacity-50">
+                                            <span style={{ fontSize: '40px' }}>
+                                                {filtroBusca || filtroStatus !== 'TODAS' ? '🔍' : '🗓️'}
+                                            </span>
+                                            <p className="fw-black text-muted uppercase small tracking-widest mt-2">
+                                                {filtroBusca || filtroStatus !== 'TODAS' 
+                                                    ? 'Nenhum agendamento encontrado para esta busca' 
+                                                    : 'A agenda está vazia para o período selecionado'}
+                                            </p>
+                                            {(filtroBusca || filtroStatus !== 'TODAS') && (
+                                                <button 
+                                                    onClick={() => { setFiltroBusca(''); setFiltroStatus('TODAS'); }}
+                                                    className="btn btn-link btn-sm text-primary fw-bold uppercase text-decoration-none p-0"
+                                                >
+                                                    Limpar Filtros
+                                                </button>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+                            ) : (
+                                consultasFiltradas.map((consulta) => (
+                                    <tr key={consulta.id} className="animate__animated animate__fadeIn">
+                                        <td className="px-4 py-3">
+                                            <div className="d-flex flex-column">
+                                                <span className="fw-bold text-dark" style={{fontSize: '13px'}}>
+                                                    {new Date(consulta.dataHora).toLocaleDateString('pt-BR')}
+                                                </span>
+                                                <span className="text-muted small" style={{fontSize: '11px'}}>
+                                                    {new Date(consulta.dataHora).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})} hs
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="fw-black text-primary text-uppercase" style={{fontSize: '12px'}}>
+                                                {consulta.paciente?.nome || 'Paciente não identificado'}
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="text-muted fw-bold small">
+                                                Dr(a). {consulta.medico?.nome || 'Médico não identificado'}
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3 text-center">
+                                            <span className={`badge border px-3 py-2 rounded-pill fw-black uppercase ${getStatusStyle(consulta.status)}`} style={{fontSize: '9px'}}>
+                                                {consulta.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3 text-center">
+                                            <div className="d-flex justify-content-center gap-2">
+                                                {consulta.status !== 'CANCELADA' && (
+                                                    <button 
+                                                        onClick={() => handleEditar(consulta)} 
+                                                        className="btn btn-white btn-sm rounded-3 border shadow-sm px-3 text-primary fw-bold" 
+                                                        title="Editar Agendamento"
+                                                        style={{fontSize: '11px'}}
+                                                    >
+                                                        EDITAR
+                                                    </button>
+                                                )}
+                                                {consulta.status === 'AGENDADA' && (
+                                                    <button 
+                                                        onClick={() => handleCancelar(consulta.id, consulta.paciente?.nome)} 
+                                                        className="btn btn-white btn-sm rounded-3 border shadow-sm px-3 text-danger fw-bold" 
+                                                        title="Cancelar"
+                                                        style={{fontSize: '11px'}}
+                                                    >
+                                                        CANCELAR
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
-            {/* Modal de Agendamento/Edição */}
             <AdminAgendamentoModal 
                 isOpen={isModalOpen}
                 consulta={consultaParaEditar}
                 onClose={() => { setIsModalOpen(false); setConsultaParaEditar(null); }}
                 onAgendamentoSuccess={handleAgendamentoSuccess}
             />
+            <style>{`
+                .bg-primary-subtle { background-color: #e7f1ff !important; }
+                .bg-success-subtle { background-color: #d1e7dd !important; }
+                .bg-danger-subtle { background-color: #f8d7da !important; }
+            `}</style>
         </div>
     );
 }

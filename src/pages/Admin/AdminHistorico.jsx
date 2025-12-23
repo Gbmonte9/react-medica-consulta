@@ -6,12 +6,9 @@ import { useLoading } from '../../contexts/LoadingContext';
 function AdminHistorico() {
     const [consultas, setConsultas] = useState([]);
     const [error, setError] = useState(null);
-    
     const [filtroStatus, setFiltroStatus] = useState('TODAS'); 
     const [filtroBusca, setFiltroBusca] = useState(''); 
     const [isHistoricoModalOpen, setIsHistoricoModalOpen] = useState(false);
-    
-    // ALTERADO: Agora guardamos o objeto da consulta inteira para passar ao modal
     const [consultaSelecionada, setConsultaSelecionada] = useState(null);
 
     const { setIsLoading } = useLoading();
@@ -19,20 +16,22 @@ function AdminHistorico() {
     const fetchConsultas = async () => {
         try {
             setIsLoading(true);
-            setError(null);
             const data = await listarTodasConsultas();
             setConsultas(Array.isArray(data) ? data : []);
         } catch (err) {
-            console.error("Erro ao buscar consultas:", err);
             setError(err.message || 'Erro ao carregar histórico.');
         } finally {
             setIsLoading(false);
         }
     };
 
-    useEffect(() => { 
-        fetchConsultas(); 
-    }, []);
+    useEffect(() => { fetchConsultas(); }, []);
+
+    // --- FUNÇÃO AUXILIAR PARA PEGAR NOME (Padroniza a busca do nome) ---
+    const extrairNome = (objeto) => {
+        if (!objeto) return "N/A";
+        return objeto.nomeUsuario || objeto.nome || (objeto.usuario ? objeto.usuario.nome : "N/A");
+    };
 
     const handleCancelar = async (id, pacienteNome) => {
         if (!window.confirm(`Deseja realmente cancelar a consulta de ${pacienteNome}?`)) return;
@@ -41,7 +40,7 @@ function AdminHistorico() {
             await cancelarConsulta(id);
             await fetchConsultas();
         } catch (err) {
-            alert(`Erro ao cancelar: ${err.message}`);
+            alert(`Erro: ${err.message}`);
         } finally {
             setIsLoading(false);
         }
@@ -51,8 +50,10 @@ function AdminHistorico() {
         return consultas
             .filter(c => {
                 const matchesStatus = filtroStatus === 'TODAS' || c.status === filtroStatus;
-                const nomePaciente = (c.paciente?.nomeUsuario || "").toLowerCase();
-                const nomeMedico = (c.medico?.nomeUsuario || "").toLowerCase();
+                
+                // Aplica a mesma lógica de extração no filtro de busca
+                const nomePaciente = extrairNome(c.paciente).toLowerCase();
+                const nomeMedico = extrairNome(c.medico).toLowerCase();
                 const busca = filtroBusca.toLowerCase();
                 
                 return matchesStatus && (nomePaciente.includes(busca) || nomeMedico.includes(busca));
@@ -61,119 +62,138 @@ function AdminHistorico() {
     }, [consultas, filtroStatus, filtroBusca]);
 
     const handleOpenHistoricoModal = (consulta) => {
-        console.log("CONTEÚDO DA CONSULTA:", consulta); // Adicione isso aqui!
         setConsultaSelecionada(consulta);
         setIsHistoricoModalOpen(true);
     };
 
-    const getStatusClasses = (status) => {
+    const getStatusStyle = (status) => {
         switch (status) {
-            case 'AGENDADA': return 'bg-blue-100 text-blue-800 border-blue-200';
-            case 'REALIZADA': return 'bg-green-100 text-green-800 border-green-200';
-            case 'CANCELADA': return 'bg-red-100 text-red-800 border-red-200';
-            default: return 'bg-gray-100 text-gray-800';
+            case 'AGENDADA': return 'bg-primary-subtle text-primary border-primary-subtle';
+            case 'REALIZADA': return 'bg-success-subtle text-success border-success-subtle';
+            case 'CANCELADA': return 'bg-danger-subtle text-danger border-danger-subtle';
+            default: return 'bg-light text-muted';
         }
     };
 
     return (
-        <div className="p-6 bg-gray-50 min-h-screen">
-            <h2 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-4">
-                📜 Histórico Geral de Consultas
-            </h2>
+        <div className="container-fluid p-0 animate__animated animate__fadeIn">
+            <div className="mb-4">
+                <h2 className="fw-black text-dark uppercase tracking-tighter mb-1">📜 Histórico Clínico</h2>
+                <p className="text-muted small fw-bold uppercase">Auditoria e registros de atendimentos finalizados</p>
+            </div>
 
-            {/* Filtros */}
-            <div className="bg-white p-4 shadow-sm rounded-xl mb-6 flex flex-col md:flex-row gap-4 border border-gray-200">
-                <div className="w-full md:w-48">
-                    <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Status</label>
-                    <select 
-                        value={filtroStatus}
-                        onChange={(e) => setFiltroStatus(e.target.value)}
-                        className="w-full border p-2 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                        <option value="TODAS">Todos</option>
-                        <option value="AGENDADA">Agendadas</option>
-                        <option value="REALIZADA">Realizadas</option>
-                        <option value="CANCELADA">Canceladas</option>
-                    </select>
-                </div>
-                <div className="flex-1">
-                    <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Pesquisar</label>
-                    <input
-                        type="text"
-                        placeholder="Buscar por Paciente ou Médico..."
-                        value={filtroBusca}
-                        onChange={(e) => setFiltroBusca(e.target.value)}
-                        className="w-full border p-2 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+            <div className="card border-0 shadow-sm rounded-4 mb-4">
+                <div className="card-body p-3">
+                    <div className="row g-3">
+                        <div className="col-12 col-md-3">
+                            <label className="form-label fw-black text-muted uppercase" style={{fontSize: '10px'}}>Filtrar Status</label>
+                            <select value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)} className="form-select border-0 bg-light rounded-3 shadow-none fw-bold">
+                                <option value="TODAS">Todos</option>
+                                <option value="AGENDADA">Agendadas</option>
+                                <option value="REALIZADA">Realizadas</option>
+                                <option value="CANCELADA">Canceladas</option>
+                            </select>
+                        </div>
+                        <div className="col-12 col-md-9">
+                            <label className="form-label fw-black text-muted uppercase" style={{fontSize: '10px'}}>Pesquisa Inteligente</label>
+                            <input type="text" placeholder="Buscar por Paciente ou Especialista..." value={filtroBusca} onChange={(e) => setFiltroBusca(e.target.value)} className="form-control border-0 bg-light rounded-3 shadow-none" />
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* Tabela */}
-            <div className="bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-200">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                        <tr>
-                            <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Data e Hora</th>
-                            <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Paciente</th>
-                            <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Médico</th>
-                            <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase">Status</th>
-                            <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {consultasFiltradas.map((consulta) => (
-                            <tr key={consulta.id} className="hover:bg-gray-50">
-                                <td className="px-6 py-4 text-sm text-gray-700">
-                                    {new Date(consulta.dataHora).toLocaleString('pt-BR')} 
-                                </td>
-                                <td className="px-6 py-4 text-sm font-semibold text-gray-900">
-                                    {consulta.paciente?.nomeUsuario || "N/A"} 
-                                </td>
-                                <td className="px-6 py-4 text-sm text-gray-600">
-                                    {consulta.medico?.nomeUsuario || "N/A"}
-                                </td>
-                                <td className="px-6 py-4 text-center">
-                                    <span className={`px-3 py-1 text-xs font-bold rounded-full border ${getStatusClasses(consulta.status)}`}>
-                                        {consulta.status}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 text-center">
-                                    <div className="flex justify-center space-x-2">
-                                        {consulta.status !== 'CANCELADA' && (
-                                            <button 
-                                                // ALTERADO: Passa o objeto consulta
-                                                onClick={() => handleOpenHistoricoModal(consulta)}
-                                                className="flex items-center gap-1 bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-600 hover:text-white transition-all text-sm font-bold"
-                                            >
-                                                <span>{consulta.status === 'REALIZADA' ? '👁️ Ver/Editar' : '📝 Registrar'}</span>
-                                            </button>
-                                        )}
-                                        {consulta.status === 'AGENDADA' && (
-                                            <button 
-                                                onClick={() => handleCancelar(consulta.id, consulta.paciente?.nomeUsuario)}
-                                                className="flex items-center gap-1 bg-red-50 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-600 hover:text-white transition-all text-sm font-bold"
-                                            >
-                                                <span>❌</span> Cancelar
-                                            </button>
-                                        )}
-                                    </div>
-                                </td>
+            <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div className="table-responsive">
+                    <table className="table table-hover align-middle mb-0">
+                        <thead className="bg-light">
+                            <tr>
+                                <th className="px-4 py-3 border-0 fw-black text-muted small uppercase">Data/Hora</th>
+                                <th className="px-4 py-3 border-0 fw-black text-muted small uppercase">Paciente</th>
+                                <th className="px-4 py-3 border-0 fw-black text-muted small uppercase">Médico</th>
+                                <th className="px-4 py-3 border-0 fw-black text-muted small uppercase text-center">Status</th>
+                                <th className="px-4 py-3 border-0 fw-black text-muted small uppercase text-center">Ações</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="border-top-0">
+                            {consultasFiltradas.length === 0 ? (
+                                <tr>
+                                    <td colSpan="5" className="text-center py-5">
+                                        <div className="d-flex flex-column align-items-center opacity-50">
+                                            <span style={{ fontSize: '40px' }}>
+                                                {filtroBusca || filtroStatus !== 'TODAS' ? '🔍' : '📅'}
+                                            </span>
+                                            <p className="fw-black text-muted uppercase small tracking-widest mt-2">
+                                                {filtroBusca || filtroStatus !== 'TODAS' 
+                                                    ? 'Nenhuma consulta corresponde aos filtros' 
+                                                    : 'Nenhum registro de consulta encontrado'}
+                                            </p>
+                                            {(filtroBusca || filtroStatus !== 'TODAS') && (
+                                                <button 
+                                                    onClick={() => { setFiltroBusca(''); setFiltroStatus('TODAS'); }}
+                                                    className="btn btn-link btn-sm text-primary fw-bold uppercase text-decoration-none"
+                                                >
+                                                    Limpar Filtros
+                                                </button>
+                                            )}
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : (
+                                consultasFiltradas.map((consulta) => (
+                                    <tr key={consulta.id} className="animate__animated animate__fadeIn">
+                                        <td className="px-4 py-3 small fw-bold text-dark">
+                                            <div className="d-flex flex-column">
+                                                <span>{new Date(consulta.dataHora).toLocaleDateString('pt-BR')}</span>
+                                                <span className="text-muted" style={{fontSize: '10px'}}>
+                                                    {new Date(consulta.dataHora).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <div className="fw-black text-primary uppercase" style={{fontSize: '12px'}}>
+                                                {extrairNome(consulta.paciente)}
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3 text-muted fw-bold small">
+                                            {extrairNome(consulta.medico)}
+                                        </td>
+                                        <td className="px-4 py-3 text-center">
+                                            <span className={`badge border px-3 py-2 rounded-pill fw-black uppercase ${getStatusStyle(consulta.status)}`} style={{fontSize: '9px'}}>
+                                                {consulta.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3 text-center">
+                                            <div className="d-flex justify-content-center gap-2">
+                                                {consulta.status !== 'CANCELADA' && (
+                                                    <button onClick={() => handleOpenHistoricoModal(consulta)} className="btn btn-outline-primary btn-sm rounded-3 fw-black uppercase px-3" style={{fontSize: '10px'}}>
+                                                        {consulta.status === 'REALIZADA' ? '👁️ Ver Detalhes' : '📝 Registrar'}
+                                                    </button>
+                                                )}
+                                                {consulta.status === 'AGENDADA' && (
+                                                    <button onClick={() => handleCancelar(consulta.id, extrairNome(consulta.paciente))} className="btn btn-light btn-sm rounded-3 text-danger border p-2" title="Cancelar">❌</button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
             
             <HistoricoRegistroModal
                 isOpen={isHistoricoModalOpen}
                 onClose={() => setIsHistoricoModalOpen(false)}
-                // ALTERADO: Passa a consulta completa para o modal
                 consulta={consultaSelecionada}
-                onHistoricoSuccess={() => {
-                    setIsHistoricoModalOpen(false);
-                    fetchConsultas(); 
-                }}
+                onHistoricoSuccess={() => { setIsHistoricoModalOpen(false); fetchConsultas(); }}
             />
+
+            <style>{`
+                .bg-primary-subtle { background-color: #e7f1ff !important; }
+                .bg-success-subtle { background-color: #d1e7dd !important; }
+                .bg-danger-subtle { background-color: #f8d7da !important; }
+            `}</style>
         </div>
     );
 }

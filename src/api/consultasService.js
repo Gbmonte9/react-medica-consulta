@@ -29,6 +29,22 @@ export const extractErrorMessage = async (response) => {
     return null; 
 };
 
+/**
+ * Busca as consultas vinculadas ao paciente logado
+ * O backend deve identificar o usuário através do Token JWT
+ */
+export const listarMinhasConsultas = async () => {
+    const response = await fetch(`${CONSULTAS_API_BASE_URL}/paciente`, { 
+        method: 'GET',
+        headers: getAuthHeaders(),
+    });
+    const errorMessage = await extractErrorMessage(response);
+    if (errorMessage) throw new Error(errorMessage);
+    return await response.json(); 
+};
+
+// --- FUNÇÕES EXISTENTES ---
+
 export const agendarConsulta = async (agendamentoData) => { 
     const response = await fetch(CONSULTAS_API_BASE_URL, {
         method: 'POST',

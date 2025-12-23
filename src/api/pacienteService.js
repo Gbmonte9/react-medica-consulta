@@ -4,7 +4,6 @@ import { getToken } from './authService';
 
 const PACIENTES_API_BASE_URL = 'http://localhost:8080/api/pacientes';
 
-// Helper para headers autenticados (Mantido, pois o Admin precisa de token)
 const getAuthHeaders = () => {
     const token = getToken();
     return {
@@ -13,7 +12,6 @@ const getAuthHeaders = () => {
     };
 };
 
-// 1. LISTAR (GET)
 export const listarPacientes = async () => {
     try {
         const response = await fetch(PACIENTES_API_BASE_URL, {
@@ -34,20 +32,16 @@ export const listarPacientes = async () => {
     }
 };
 
-// 2. CRIAR (POST)
-// O objeto 'pacienteData' deve conter { nome, email, senha, cpf, telefone }
 export const criarPaciente = async (pacienteData) => { 
     try {
         const response = await fetch(PACIENTES_API_BASE_URL, {
             method: 'POST',
             headers: getAuthHeaders(), 
-            // O JSON enviado terá as chaves nome, email e senha que o seu DTO espera
             body: JSON.stringify(pacienteData),
         });
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            // Isso captura as mensagens do seu @NotBlank do Java
             throw new Error(errorData.message || 'Erro ao criar paciente.');
         }
 
@@ -58,18 +52,23 @@ export const criarPaciente = async (pacienteData) => {
     }
 };
 
-// 3. ATUALIZAR (PUT)
 export const atualizarPaciente = async (id, pacienteData) => {
     try {
+        const dadosParaEnviar = { ...pacienteData };
+
+        if (!dadosParaEnviar.senha || dadosParaEnviar.senha.trim() === "") {
+            delete dadosParaEnviar.senha;
+        }
+
         const response = await fetch(`${PACIENTES_API_BASE_URL}/${id}`, {
             method: 'PUT',
             headers: getAuthHeaders(),
-            body: JSON.stringify(pacienteData),
+            body: JSON.stringify(dadosParaEnviar),
         });
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || 'Erro ao atualizar paciente.');
+            throw new Error(errorData.message || `Erro ${response.status}: Falha ao atualizar.`);
         }
 
         return await response.json();
@@ -79,7 +78,6 @@ export const atualizarPaciente = async (id, pacienteData) => {
     }
 };
 
-// 4. DELETAR (DELETE)
 export const removerPaciente = async (id) => {
     try {
         const response = await fetch(`${PACIENTES_API_BASE_URL}/${id}`, {

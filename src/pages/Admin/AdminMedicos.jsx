@@ -1,10 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
-    listarMedicos, 
-    removerMedico,
-    criarMedico,     
-    atualizarMedico  
-} from '../../api/medicoService'; 
+import { listarMedicos, removerMedico, criarMedico, atualizarMedico } from '../../api/medicoService'; 
 import MedicoFormModal from '../../components/modals/MedicoFormModal'; 
 
 function AdminMedicos() {
@@ -17,156 +12,145 @@ function AdminMedicos() {
     const fetchMedicos = async () => {
         try {
             setLoading(true);
-            setError(null);
             const data = await listarMedicos();
             setMedicos(data);
         } catch (err) {
-            console.error("Erro ao buscar médicos:", err);
-            setError(err.message || 'Erro desconhecido ao carregar médicos.');
+            setError(err.message || 'Erro ao carregar médicos.');
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => {
-        fetchMedicos();
-    }, []);
+    useEffect(() => { fetchMedicos(); }, []);
 
-    const handleNovo = () => {
-        setMedicoEditando(null); 
-        setIsModalOpen(true);
-    };
+    const handleNovo = () => { setMedicoEditando(null); setIsModalOpen(true); };
 
     const handleEditar = (medico) => {
-        // Padronizamos os dados para o Modal, convertendo os campos do Java
-        const dadosParaModal = {
+        const nomeCapturado = medico.nomeUsuario || medico.nome || "";
+        const emailCapturado = medico.emailUsuario || medico.email || "";
+
+        setMedicoEditando({
             id: medico.id,
-            nome: medico.nomeUsuario || medico.nome, // Dependendo de como seu DTO retorna
-            email: medico.emailUsuario || medico.email,
-            crm: medico.crm,
+            nome: nomeCapturado,
+            email: emailCapturado,
+            crm: "", // Deixe vazio para o placeholder "Inalterado" aparecer
             especialidade: medico.especialidade,
             telefone: medico.telefone,
-            senha: "" // Senha sempre vazia na edição
-        };
-        setMedicoEditando(dadosParaModal); 
+            senha: "" 
+        }); 
         setIsModalOpen(true);
     };
 
     const handleSalvar = async (medicoData) => {
         try {
-            // Adicionamos o tipo MEDICO automaticamente
-            const payload = { 
-                ...medicoData, 
-                tipo: 'MEDICO' 
-            };
-
-            if (medicoEditando && medicoEditando.id) {
-                // Se for edição e a senha estiver vazia, removemos para manter a antiga
-                if (!payload.senha || payload.senha.trim() === "") {
-                    delete payload.senha;
-                }
-                
-                await atualizarMedico(medicoEditando.id, payload);
-                alert('Médico atualizado com sucesso!');
-            } else {
-                // Para novo médico, validamos a senha
-                if (!payload.senha) {
-                    alert("A senha é obrigatória para novos cadastros!");
-                    return;
-                }
-                await criarMedico(payload);
-                alert('Médico cadastrado com sucesso!');
-            }
+            // Criamos uma cópia para não sujar o estado do formulário
+            const payload = { ...medicoData, tipo: 'MEDICO' };
             
+            if (medicoEditando?.id) {
+                // Se os campos sensíveis estiverem vazios, removemos do payload
+                // Assim o Java mantém os valores originais do banco
+                if (!payload.senha || !payload.senha.trim()) delete payload.senha;
+                if (!payload.crm || !payload.crm.trim()) delete payload.crm;
+
+                await atualizarMedico(medicoEditando.id, payload);
+            } else {
+                await criarMedico(payload);
+            }
             setIsModalOpen(false);
             fetchMedicos();      
         } catch (err) {
-            console.error("Erro ao salvar médico:", err);
-            alert(`Falha ao salvar médico: ${err.message}`);
+            // Dica: Se o erro for 409, o Java retornará "CRM já cadastrado"
+            alert(`Falha ao salvar: ${err.message}`);
         }
     };
 
     const handleRemover = async (id, nome) => {
-        const nomeMedico = nome || "este médico";
-        if (!window.confirm(`Tem certeza que deseja remover o médico ${nomeMedico}?`)) {
-            return;
-        }
+        if (!window.confirm(`Remover o profissional ${nome}?`)) return;
         try {
             await removerMedico(id);
             fetchMedicos(); 
-            alert(`Médico removido com sucesso.`);
         } catch (err) {
-            console.error("Erro ao remover médico:", err);
-            alert(`Falha ao remover médico: ${err.message}`);
+            alert(`Erro: ${err.message}`);
         }
     };
 
-    if (loading) return <div className="p-4 text-center text-blue-600 font-medium">Carregando médicos...</div>;
-    if (error) return <div className="p-4 text-red-600 bg-red-50 border border-red-200 rounded-md m-4">{error}</div>;
+    if (loading) return (
+        <div className="text-center py-5">
+            <div className="spinner-border text-primary shadow-sm" role="status"></div>
+            <p className="mt-2 fw-black text-muted uppercase small tracking-widest">Sincronizando Profissionais...</p>
+        </div>
+    );
 
     return (
-        <div className="p-6 bg-gray-50 min-h-screen">
-            <header className="flex justify-between items-center mb-8 bg-white p-4 rounded-lg shadow-sm">
-                <h2 className="text-2xl font-bold text-gray-800">Gestão de Médicos</h2>
-                <button 
-                    onClick={handleNovo} 
-                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition shadow-md font-medium"
-                >
-                    + Novo Médico
-                </button>
-            </header>
-
-            {medicos.length === 0 ? (
-                <div className="text-center p-10 bg-white rounded-xl shadow">
-                    <p className="text-xl text-gray-400">Nenhum médico cadastrado no sistema.</p>
+        <div className="container-fluid p-0 animate__animated animate__fadeIn">
+            {/* Cabeçalho */}
+            <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 gap-3">
+                <div>
+                    <h2 className="fw-black text-dark uppercase tracking-tighter mb-0">Corpo Clínico</h2>
+                    <p className="text-muted small fw-bold uppercase mb-0">Gestão de especialistas e credenciais</p>
                 </div>
-            ) : (
-                <div className="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-100">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                <button onClick={handleNovo} className="btn btn-primary fw-black uppercase px-4 py-2 rounded-3 shadow-sm border-0">
+                    + Adicionar Profissional
+                </button>
+            </div>
+
+            {/* Tabela / Card */}
+            <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div className="table-responsive">
+                    <table className="table table-hover align-middle mb-0">
+                        <thead className="bg-light">
                             <tr>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Nome</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">CRM</th>
-                                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-widest">Especialidade</th>
-                                <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-widest">Ações</th>
+                                <th className="px-4 py-3 border-0 fw-black text-muted small uppercase">Profissional</th>
+                                <th className="px-4 py-3 border-0 fw-black text-muted small uppercase">Registro (CRM/CRP)</th>
+                                <th className="px-4 py-3 border-0 fw-black text-muted small uppercase">Especialidade</th>
+                                <th className="px-4 py-3 border-0 fw-black text-muted small uppercase text-center">Ações</th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-100">
-                            {medicos.map((medico) => (
-                                <tr key={medico.id} className="hover:bg-blue-50/50 transition-colors">
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                                        {medico.nomeUsuario || medico.nome}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                        {medico.crm}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                                            {medico.especialidade}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium flex justify-center space-x-6">
-                                        <button 
-                                            onClick={() => handleEditar(medico)}
-                                            className="text-blue-600 hover:text-blue-800 flex items-center transition-colors"
-                                            title="Editar Médico"
-                                        >
-                                            <span className="mr-1">✏️</span> Editar
-                                        </button>
-                                        <button 
-                                            onClick={() => handleRemover(medico.id, medico.nomeUsuario || medico.nome)}
-                                            className="text-red-500 hover:text-red-700 flex items-center transition-colors"
-                                            title="Remover Médico"
-                                        >
-                                            <span className="mr-1">🗑️</span> Excluir
-                                        </button>
+                        <tbody className="border-top-0">
+                            {medicos.length === 0 ? (
+                                <tr>
+                                    <td colSpan="4" className="text-center py-5">
+                                        <div className="d-flex flex-column align-items-center opacity-50">
+                                            <span style={{ fontSize: '40px' }}>🩺</span>
+                                            <p className="fw-black text-muted uppercase small tracking-widest mt-2">
+                                                Nenhum profissional localizado no corpo clínico
+                                            </p>
+                                        </div>
                                     </td>
                                 </tr>
-                            ))}
+                            ) : (
+                                medicos.map((medico) => (
+                                    <tr key={medico.id}>
+                                        <td className="px-4 py-3">
+                                            <div className="d-flex align-items-center">
+                                                <div className="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center me-3 fw-bold" style={{width: '38px', height: '38px'}}>
+                                                    {(medico.nomeUsuario || medico.nome).charAt(0)}
+                                                </div>
+                                                <div>
+                                                    <div className="fw-bold text-dark">{medico.nomeUsuario || medico.nome}</div>
+                                                    <div className="text-muted small" style={{fontSize: '11px'}}>{medico.emailUsuario || medico.email}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3 font-monospace fw-bold text-secondary">{medico.crm}</td>
+                                        <td className="px-4 py-3">
+                                            <span className="badge bg-soft-blue text-primary border border-primary-subtle px-3 py-2 rounded-pill uppercase fw-black" style={{fontSize: '9px'}}>
+                                                {medico.especialidade}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3 text-center">
+                                            <div className="btn-group shadow-sm rounded-3">
+                                                <button onClick={() => handleEditar(medico)} className="btn btn-white btn-sm border-end px-3 text-primary fw-black uppercase" style={{fontSize: '10px'}}>Editar</button>
+                                                <button onClick={() => handleRemover(medico.id, medico.nomeUsuario || medico.nome)} className="btn btn-white btn-sm px-3 text-danger fw-black uppercase" style={{fontSize: '10px'}}>Remover</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
                 </div>
-            )}
+            </div>
 
             {isModalOpen && (
                 <MedicoFormModal
@@ -176,6 +160,13 @@ function AdminMedicos() {
                     onSave={handleSalvar}
                 />
             )}
+
+            <style>{`
+                .bg-primary-subtle { background-color: #e7f1ff !important; }
+                .bg-soft-blue { background-color: #f0f7ff !important; }
+                .btn-white { background: white; border: 1px solid #eee; }
+                .btn-white:hover { background: #f8f9fa; }
+            `}</style>
         </div>
     );
 }

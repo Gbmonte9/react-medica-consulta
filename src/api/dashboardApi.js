@@ -1,4 +1,3 @@
-// src/api/dashboardApi.js
 import { listarTodasConsultas } from './consultasService';
 import { listarMedicos } from './medicoService'; 
 import { listarPacientes } from './pacienteService'; 
@@ -11,30 +10,34 @@ export const fetchDashboardData = async () => {
           listarPacientes(),
         ]);
         
-        // --- LÓGICA DE DATA CORRIGIDA (Fuso Local) ---
         const agora = new Date();
-        
-        // Formata para YYYY-MM-DD usando a data local (evita erro de UTC)
-        const hoje = agora.getFullYear() + '-' + 
-                     String(agora.getMonth() + 1).padStart(2, '0') + '-' + 
-                     String(agora.getDate()).padStart(2, '0');
+        const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate()).getTime();
 
-        const mesAtual = hoje.substring(0, 7); // Pega apenas YYYY-MM
+        const mesAtual = agora.getMonth();
+        const anoAtual = agora.getFullYear();
 
-        // Filtro de Consultas Hoje
-        const consultasHoje = consultas.filter(c => {
-            const dataStr = c.dataHora || c.dataConsulta || "";
-            // Usamos .includes para garantir que pegue a data mesmo com horas depois
-            return dataStr.includes(hoje);
-        }).length;
-        
-        // Filtro de Consultas Mês
-        const consultasMes = consultas.filter(c => {
-            const dataStr = c.dataHora || c.dataConsulta || "";
-            return dataStr.includes(mesAtual);
-        }).length;
+        let contadorHoje = 0;
+        let contadorMes = 0;
 
-        // Distribuição por especialidade
+        consultas.forEach(c => {
+            const dataRaw = c.dataHora || c.dataConsulta;
+            if (!dataRaw) return;
+
+            const dataConsulta = new Date(dataRaw);
+            
+            if (isNaN(dataConsulta.getTime())) return;
+
+            const diaConsulta = new Date(dataConsulta.getFullYear(), dataConsulta.getMonth(), dataConsulta.getDate()).getTime();
+
+            if (diaConsulta === hoje) {
+                contadorHoje++;
+            }
+
+            if (dataConsulta.getMonth() === mesAtual && dataConsulta.getFullYear() === anoAtual) {
+                contadorMes++;
+            }
+        });
+
         const distribuicao = consultas.reduce((acc, consulta) => {
             const especialidade = consulta.medico?.especialidade || consulta.medicoEspecialidade || 'Geral'; 
             acc[especialidade] = (acc[especialidade] || 0) + 1;
@@ -49,8 +52,8 @@ export const fetchDashboardData = async () => {
         return {
             totalMedicos: medicos.length,
             totalPacientes: pacientes.length,
-            consultasHoje,
-            consultasMes,
+            consultasHoje: contadorHoje,
+            consultasMes: contadorMes,
             distribuicaoConsultas: dadosParaGrafico,
         };
 

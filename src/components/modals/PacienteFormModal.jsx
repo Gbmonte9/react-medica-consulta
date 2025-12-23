@@ -1,23 +1,16 @@
 import React, { useState, useEffect } from 'react';
 
 function PacienteFormModal({ isOpen, paciente, onClose, onSave }) {
-    
-    const [formData, setFormData] = useState({
-        nome: '',
-        email: '',
-        senha: '', 
-        cpf: '',
-        telefone: ''
-    });
+    const [formData, setFormData] = useState({ nome: '', email: '', senha: '', cpf: '', telefone: '' });
 
     useEffect(() => {
         if (paciente) {
             setFormData({
-                nome: paciente.nome || '',
-                email: paciente.email || '',
+                nome: paciente.nomeUsuario || '', 
+                email: paciente.emailUsuario || '',
+                telefone: paciente.telefone || '',
                 senha: '', 
-                cpf: paciente.cpf || '',
-                telefone: paciente.telefone || ''
+                cpf: '' 
             });
         } else {
             setFormData({ nome: '', email: '', senha: '', cpf: '', telefone: '' });
@@ -31,111 +24,65 @@ function PacienteFormModal({ isOpen, paciente, onClose, onSave }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        
-        if (!formData.nome) {
-            alert("O nome é obrigatório.");
-            return;
-        }
-
         onSave(formData);
     };
 
     if (!isOpen) return null;
 
-    const titulo = paciente ? "Editar Paciente" : "Novo Paciente";
-    const isEditing = !!paciente;
-
     return (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex justify-center items-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-xl max-w-lg w-full">
-                <h3 className="text-xl font-bold mb-4 border-b pb-2 text-blue-800">{titulo}</h3>
-                
-                <form onSubmit={handleSubmit}>
+        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}>
+            <div className="modal-dialog modal-dialog-centered">
+                <div className="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
                     
-                    {/* Campo Nome */}
-                    <div className="mb-4">
-                        <label className="block text-gray-700 text-sm font-bold mb-2">Nome</label>
-                        <input 
-                            type="text" 
-                            name="nome" 
-                            value={formData.nome} 
-                            onChange={handleChange} 
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            required
-                        />
+                    {/* Header do Modal */}
+                    <div className="modal-header bg-white border-bottom-0 pt-4 px-4">
+                        <h5 className="modal-title fw-black text-uppercase tracking-tighter">
+                            {paciente ? 'Editar' : 'Novo'} <span className="text-primary">Paciente</span>
+                        </h5>
+                        <button type="button" className="btn-close shadow-none" onClick={onClose}></button>
                     </div>
 
-                    {/* Campo CPF */}
-                    <div className="mb-4">
-                        <label className="block text-gray-700 text-sm font-bold mb-2">CPF</label>
-                        <input 
-                            type="text" 
-                            name="cpf" 
-                            value={formData.cpf} 
-                            onChange={handleChange} 
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            placeholder={isEditing ? "Manter atual" : "000.000.000-00"}
-                            required={!isEditing} // CPF só é obrigatório no cadastro novo
-                        />
-                    </div>
-                    
-                    {/* Campo Email */}
-                    <div className="mb-4">
-                        <label className="block text-gray-700 text-sm font-bold mb-2">Email</label>
-                        <input 
-                            type="email" 
-                            name="email" 
-                            value={formData.email} 
-                            onChange={handleChange} 
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            required
-                        />
-                    </div>
+                    <form onSubmit={handleSubmit}>
+                        <div className="modal-body px-4 pb-4">
+                            <div className="row g-3">
+                                <div className="col-12">
+                                    <label className="form-label fw-bold small text-uppercase text-muted">Nome Completo</label>
+                                    <input type="text" name="nome" value={formData.nome} onChange={handleChange} className="form-control rounded-3 p-2 bg-light border-0 shadow-none" required />
+                                </div>
 
-                    {/* Campo Senha - AGORA APARECE NA EDIÇÃO TAMBÉM */}
-                    <div className="mb-4">
-                        <label className="block text-gray-700 text-sm font-bold mb-2">
-                            Senha {isEditing && <span className="text-xs font-normal text-blue-600">(Preencha apenas para mudar)</span>}
-                        </label>
-                        <input 
-                            type="password" 
-                            name="senha" 
-                            value={formData.senha} 
-                            onChange={handleChange} 
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            required={!isEditing} // Obrigatório apenas se for novo paciente
-                            placeholder={isEditing ? "••••••••" : "Mínimo 6 caracteres"}
-                        />
-                    </div>
-                    
-                    {/* Campo Telefone */}
-                    <div className="mb-6">
-                        <label className="block text-gray-700 text-sm font-bold mb-2">Telefone</label>
-                        <input 
-                            type="text" 
-                            name="telefone" 
-                            value={formData.telefone} 
-                            onChange={handleChange} 
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                        />
-                    </div>
+                                <div className="col-md-6">
+                                    <label className="form-label fw-bold small text-uppercase text-muted">CPF</label>
+                                    <input type="text" name="cpf" value={formData.cpf} onChange={handleChange} className="form-control rounded-3 p-2 bg-light border-0 shadow-none" placeholder={paciente ? "Inalterado" : "000.000.000-00"} required={!paciente} />
+                                </div>
 
-                    <div className="flex justify-end space-x-4">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-500 transition duration-200"
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            type="submit"
-                            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200"
-                        >
-                            {isEditing ? 'Salvar Alterações' : 'Cadastrar'}
-                        </button>
-                    </div>
-                </form>
+                                <div className="col-md-6">
+                                    <label className="form-label fw-bold small text-uppercase text-muted">Telefone</label>
+                                    <input type="text" name="telefone" value={formData.telefone} onChange={handleChange} className="form-control rounded-3 p-2 bg-light border-0 shadow-none" />
+                                </div>
+
+                                <div className="col-12">
+                                    <label className="form-label fw-bold small text-uppercase text-muted">Email Profissional</label>
+                                    <input type="email" name="email" value={formData.email} onChange={handleChange} className="form-control rounded-3 p-2 bg-light border-0 shadow-none" required />
+                                </div>
+
+                                <div className="col-12">
+                                    <label className="form-label fw-bold small text-uppercase text-muted">
+                                        Senha {paciente && <span className="text-primary fs-small fw-normal">(Opcional)</span>}
+                                    </label>
+                                    <input type="password" name="senha" value={formData.senha} onChange={handleChange} className="form-control rounded-3 p-2 bg-light border-0 shadow-none" required={!paciente} placeholder="••••••••" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer do Modal */}
+                        <div className="modal-footer bg-light border-0 px-4 py-3">
+                            <button type="button" onClick={onClose} className="btn btn-link text-muted fw-bold text-decoration-none uppercase small">Cancelar</button>
+                            <button type="submit" className="btn btn-primary rounded-3 px-4 fw-black uppercase shadow-sm">
+                                {paciente ? 'Salvar Alterações' : 'Criar Conta'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     );

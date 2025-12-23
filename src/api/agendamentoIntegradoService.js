@@ -1,7 +1,7 @@
 // src/api/agendamentoIntegradoService.js
 
 import { getToken } from './authService'; 
-// Suponha que você tem uma função para extrair a mensagem de erro da resposta HTTP
+
 import { extractErrorMessage } from './consultasService'; 
 
 const CONSULTAS_API_BASE_URL = 'http://localhost:8080/api/consultas';
@@ -27,7 +27,6 @@ export const agendarEFinalizarConsulta = async (dataIntegrada) => {
             body: JSON.stringify(dataIntegrada),
         });
 
-        // Use a função de erro que você já tem (exemplo)
         const errorMessage = await extractErrorMessage(response);
         if (errorMessage) {
             throw new Error(errorMessage);

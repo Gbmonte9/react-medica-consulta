@@ -1,12 +1,9 @@
 // src/api/usuarioService.js
 
-import { getToken } from './authService'; // Importa a função para obter o token JWT
+import { getToken } from './authService'; 
 
 const USUARIOS_API_BASE_URL = 'http://localhost:8080/api/usuarios';
 
-// ----------------------------------------------------
-// Função Auxiliar para Requisições Autenticadas
-// ----------------------------------------------------
 const getAuthHeaders = () => {
     const token = getToken();
     return {
@@ -15,9 +12,6 @@ const getAuthHeaders = () => {
     };
 };
 
-// ----------------------------------------------------
-// 1. LISTAR Todos os Usuários (GET /api/usuarios)
-// ----------------------------------------------------
 export const listarTodosUsuarios = async () => {
     try {
         const response = await fetch(USUARIOS_API_BASE_URL, {
@@ -33,19 +27,15 @@ export const listarTodosUsuarios = async () => {
             throw new Error(errorData.message || 'Erro ao listar todos os usuários.');
         }
 
-        return await response.json(); // Retorna List<UsuarioResponseDTO>
+        return await response.json();
     } catch (error) {
         console.error('Erro em listarTodosUsuarios:', error);
         throw error;
     }
 };
 
-// ----------------------------------------------------
-// 2. BUSCAR Usuários por Tipo (GET /api/usuarios/tipo/{tipo})
-// O tipo deve ser 'PACIENTE' ou 'MEDICO'
-// ----------------------------------------------------
 export const buscarUsuariosPorTipo = async (tipo) => {
-    // Garante que o tipo esteja em maiúsculas (como esperado pelo seu Backend)
+
     const tipoUpper = tipo.toUpperCase(); 
     
     try {
@@ -62,16 +52,13 @@ export const buscarUsuariosPorTipo = async (tipo) => {
             throw new Error(errorData.message || `Erro ao buscar usuários do tipo ${tipoUpper}.`);
         }
 
-        return await response.json(); // Retorna List<UsuarioResponseDTO>
+        return await response.json(); 
     } catch (error) {
         console.error(`Erro em buscarUsuariosPorTipo (${tipoUpper}):`, error);
         throw error;
     }
 };
 
-// ----------------------------------------------------
-// 3. REMOVER Usuário (DELETE /api/usuarios/{id})
-// ----------------------------------------------------
 export const removerUsuario = async (id) => {
     try {
         const response = await fetch(`${USUARIOS_API_BASE_URL}/${id}`, {
@@ -95,5 +82,3 @@ export const removerUsuario = async (id) => {
         throw error;
     }
 };
-
-// Você pode adicionar buscarPorId e outros endpoints se o Admin precisar

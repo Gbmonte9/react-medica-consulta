@@ -1,132 +1,195 @@
 import React, { useState, useEffect } from 'react';
 import CardEstatistica from '../../components/card/CardEstatistica';
-import GraficoExemplo from '../../components/grafico/GraficoExemplo'; 
 import { fetchDashboardData } from '../../api/dashboardApi';
+import { listarTodasConsultas } from '../../api/consultasService';
+
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell 
+} from 'recharts';
 
 function AdminDashboard() {
-  const [estatisticas, setEstatisticas] = useState({
-    totalMedicos: 0,
-    totalPacientes: 0,
-    consultasHoje: 0,
-    consultasMes: 0,
-  });
+  const [estatisticas, setEstatisticas] = useState({ totalMedicos: 0, totalPacientes: 0, consultasMes: 0 });
+  const [proximasConsultas, setProximasConsultas] = useState([]);
   const [dadosGrafico, setDadosGrafico] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [lastSync, setLastSync] = useState(new Date().toLocaleTimeString());
+
+  const COLORS = ['#0d6efd', '#6610f2', '#6f42c1', '#d63384', '#fd7e14', '#20c997'];
+
+  const loadData = async (isSilent = false) => {
+    try {
+      if (!isSilent) setLoading(true);
+      const [dashData, consultasData] = await Promise.all([
+        fetchDashboardData(),
+        listarTodasConsultas()
+      ]);
+      
+      setEstatisticas({
+        totalMedicos: dashData.totalMedicos || 0,
+        totalPacientes: dashData.totalPacientes || 0,
+        consultasMes: dashData.consultasMes || 0,
+      });
+
+      setDadosGrafico(dashData.distribuicaoConsultas || []);
+
+      const futuras = (Array.isArray(consultasData) ? consultasData : [])
+        .filter(c => c.status === 'AGENDADA')
+        .sort((a, b) => new Date(a.dataHora) - new Date(b.dataHora))
+        .slice(0, 5);
+      
+      setProximasConsultas(futuras);
+      setLastSync(new Date().toLocaleTimeString()); 
+    } catch (err) {
+      console.error("Erro na sincronização automática:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Agora recebemos os dados agregados diretamente do service
-        const data = await fetchDashboardData(); 
-        
-        // Atualizando o estado com segurança (fallback para 0 caso falte algum dado)
-        setEstatisticas({
-          totalMedicos: data.totalMedicos || 0,
-          totalPacientes: data.totalPacientes || 0,
-          consultasHoje: data.consultasHoje || 0,
-          consultasMes: data.consultasMes || 0,
-        });
+    loadData(); 
 
-        setDadosGrafico(data.distribuicaoConsultas || []);
+    const interval = setInterval(() => {
+      loadData(true); 
+    }, 30000);
 
-      } catch (err) {
-        console.error("Erro ao carregar Dashboard:", err);
-        setError(`Falha ao carregar painel: ${err.message}`);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
+    return () => clearInterval(interval); 
   }, []);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-xl font-black uppercase tracking-widest animate-pulse text-gray-400">
-          Carregando Dashboard...
-        </div>
+      <div className="d-flex flex-column align-items-center justify-content-center py-5" style={{ minHeight: '60vh' }}>
+          <div className="spinner-grow text-primary mb-3" role="status"></div>
+          <span className="text-uppercase fw-black tracking-widest text-muted small">Iniciando Painel...</span>
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <div className="p-10 text-center bg-gray-50 min-h-screen">
-        <div className="bg-white p-8 rounded-2xl shadow-xl border-2 border-red-200 inline-block">
-          <span className="text-4xl mb-4 block">⚠️</span>
-          <h2 className="text-xl font-black text-red-700 uppercase mb-2">Erro de Conexão</h2>
-          <p className="text-gray-600 font-medium mb-4">{error}</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="bg-black text-white px-6 py-2 rounded-lg font-bold uppercase text-xs tracking-widest hover:bg-gray-800 transition"
-          >
-            Tentar Novamente
-          </button>
-        </div>
-      </div>
-    );
-  }
-  
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Título com Estilo Administrativo */}
-      <div className="mb-8 border-b-4 border-black pb-4">
-        <h2 className="text-3xl font-black text-black uppercase tracking-tighter">
-          Visão Geral do Sistema
-        </h2>
-        <p className="text-gray-500 font-bold text-xs uppercase tracking-widest mt-1">
-          Dados atualizados em tempo real
-        </p>
+    <div className="container-fluid p-0 animate__animated animate__fadeIn">
+      <div className="mb-5 d-flex justify-content-between align-items-start">
+        <div>
+          <h2 className="fw-black text-dark text-uppercase tracking-tighter mb-1">Visão Geral</h2>
+          <p className="text-muted fw-bold small text-uppercase tracking-widest">Painel Administrativo de Saúde Mental</p>
+          <div className="bg-primary" style={{ height: '4px', width: '60px', borderRadius: '2px' }}></div>
+        </div>
+        <div className="text-end d-none d-md-block">
+            <small className="text-muted fw-bold text-uppercase" style={{fontSize: '10px'}}>Última Sincronia</small>
+            <div className="fw-black text-primary">{lastSync}</div>
+        </div>
       </div>
 
-      {/* Seção 1: Cartões de Estatísticas - Cores de Contraste */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-10">
-        <CardEstatistica titulo="Médicos Ativos" valor={estatisticas.totalMedicos} icone="🧑‍⚕️" color="bg-blue-600" />
-        <CardEstatistica titulo="Pacientes" valor={estatisticas.totalPacientes} icone="🧍" color="bg-emerald-600" />
-        <CardEstatistica titulo="Consultas Hoje" valor={estatisticas.consultasHoje} icone="🗓️" color="bg-rose-600" />
-        <CardEstatistica titulo="Total no Mês" valor={estatisticas.consultasMes} icone="📊" color="bg-amber-500" />
+      <div className="row g-4 mb-5">
+        <div className="col-12 col-md-4">
+          <CardEstatistica titulo="Profissionais" valor={estatisticas.totalMedicos} icone="🧑‍⚕️" color="bg-primary" />
+        </div>
+        <div className="col-12 col-md-4">
+          <CardEstatistica titulo="Pacientes" valor={estatisticas.totalPacientes} icone="🧍" color="bg-success" />
+        </div>
+        <div className="col-12 col-md-4">
+          <CardEstatistica titulo="Sessões no Mês" valor={estatisticas.consultasMes} icone="📊" color="bg-info" />
+        </div>
       </div>
 
-      {/* Seção 2: Gráficos e Tabelas Rápidas */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white p-8 shadow-2xl rounded-3xl border border-gray-100">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-black text-black uppercase tracking-tight">Consultas por Especialidade</h3>
-            <span className="text-[10px] bg-gray-100 px-2 py-1 rounded font-bold text-gray-400">GRÁFICO</span>
-          </div>
-          <div className="h-[300px] flex items-center justify-center bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
-            {/* O componente de gráfico recebe os dados processados */}
-            <GraficoExemplo dados={dadosGrafico} /> 
+      <div className="row g-4">
+        <div className="col-12 col-lg-8">
+          <div className="card border-0 shadow-sm rounded-4 h-100">
+            <div className="card-body p-4">
+              <h5 className="fw-black text-uppercase mb-4 small tracking-widest">Demanda por Especialidade</h5>
+              <div style={{ width: '100%' }}>
+                {dadosGrafico.length > 0 ? (
+                  <ResponsiveContainer width="99%" aspect={2.2}>
+                    <BarChart data={dadosGrafico} margin={{ top: 10, right: 10, left: -20, bottom: 60 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} angle={-30} textAnchor="end" interval={0} style={{ fontSize: '11px', fontWeight: 'bold' }} />
+                      <YAxis axisLine={false} tickLine={false} style={{ fontSize: '12px' }} />
+                      <Tooltip cursor={{fill: '#f8f9fa'}} contentStyle={{ borderRadius: '10px', border: 'none' }} />
+                      <Bar dataKey="consultas" radius={[6, 6, 0, 0]} barSize={40}>
+                        {dadosGrafico.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="d-flex flex-column align-items-center justify-content-center py-5 bg-light rounded-4 border border-dashed">
+                    <p className="text-muted fw-bold small text-uppercase">Nenhum dado clínico disponível</p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
         
-        <div className="bg-white p-8 shadow-2xl rounded-3xl border border-gray-100 flex flex-col">
-          <h3 className="text-lg font-black text-black uppercase tracking-tight mb-6">Status Operacional</h3>
-          <div className="flex-1 flex flex-col items-center justify-center text-center">
-            <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-4xl mb-4 shadow-inner">
-              ✓
-            </div>
-            <p className="text-black font-black uppercase text-sm mb-1">Servidores Online</p>
-            <p className="text-gray-400 text-xs font-bold">Todos os serviços de API estão respondendo corretamente.</p>
-            
-            <div className="mt-8 w-full space-y-3">
-               <div className="flex justify-between text-[10px] font-black uppercase text-gray-400 border-b pb-1">
-                  <span>Banco de Dados</span>
-                  <span className="text-green-600">Sincronizado</span>
-               </div>
-               <div className="flex justify-between text-[10px] font-black uppercase text-gray-400 border-b pb-1">
-                  <span>Sessão Admin</span>
-                  <span className="text-blue-600">Ativa</span>
-               </div>
+        <div className="col-12 col-lg-4">
+          <div className="card border-0 shadow-sm rounded-4 h-100 bg-white p-4">
+            <h5 className="fw-black text-uppercase mb-4 small tracking-widest">Próximos Horários</h5>
+            <div className="d-flex flex-column gap-3">
+              {proximasConsultas.map((c) => (
+                <div key={c.id} className="p-3 bg-light rounded-3 border-start border-primary border-4 shadow-sm animate__animated animate__fadeInRight">
+                  <div className="d-flex justify-content-between align-items-center mb-1">
+                    <span className="fw-black text-primary small">{new Date(c.dataHora).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    <span className="badge bg-white text-dark border-0 shadow-xs" style={{fontSize: '9px'}}>{new Date(c.dataHora).toLocaleDateString()}</span>
+                  </div>
+                  <h6 className="mb-0 text-truncate fw-bold" style={{fontSize: '13px'}}>{c.paciente?.nome}</h6>
+                  <small className="text-muted text-uppercase fw-bold" style={{fontSize: '9px'}}>{c.medico?.especialidade}</small>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
+
+      <div className="mt-4 d-flex flex-wrap gap-3">
+          <div className="badge bg-white text-success border shadow-xs p-2 px-3 rounded-pill d-flex align-items-center">
+              <span className="status-dot bg-success me-2"></span>
+              <small className="fw-black tracking-widest uppercase" style={{ fontSize: '9px' }}>Servidor Online</small>
+          </div>
+          <div className="badge bg-white text-primary border shadow-xs p-2 px-3 rounded-pill d-flex align-items-center">
+              <span className="status-dot bg-primary me-2"></span>
+              <small className="fw-black tracking-widest uppercase" style={{ fontSize: '9px' }}>Dados Atualizados</small>
+          </div>
+          <div className="badge bg-white text-info border shadow-xs p-2 px-3 rounded-pill d-flex align-items-center">
+              <span className="status-dot bg-info me-2 pulse-blue"></span>
+              <small className="fw-black tracking-widest uppercase" style={{ fontSize: '9px' }}>Sincronia API Ativa</small>
+          </div>
+      </div>
+
+      <style>{`
+        .fw-black { font-weight: 900 !important; }
+        .tracking-widest { letter-spacing: 0.1em; }
+        .rounded-4 { border-radius: 1.25rem !important; }
+        .border-dashed { border: 2px dashed #dee2e6 !important; }
+        
+        /* Efeito de Bolinha Pulsante */
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            position: relative;
+        }
+
+        .status-dot::after {
+            content: '';
+            width: 100%;
+            height: 100%;
+            background: inherit;
+            border-radius: 50%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            animation: pulse 2s infinite;
+            opacity: 0.6;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.6; }
+            100% { transform: scale(2.5); opacity: 0; }
+        }
+
+        .pulse-blue::after { background-color: #0dcaf0; }
+      `}</style>
     </div>
   );
 }

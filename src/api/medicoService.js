@@ -22,7 +22,7 @@ export const listarMedicos = async () => {
 
         if (!response.ok) {
             if (response.status === 403) throw new Error('Acesso negado. Requer papel de Administrador.');
-            const errorData = await response.json().catch(() => ({})); // Evita erro se o body vier vazio
+            const errorData = await response.json().catch(() => ({})); 
             throw new Error(errorData.message || 'Erro ao listar médicos.');
         }
 
@@ -33,10 +33,10 @@ export const listarMedicos = async () => {
     }
 };
 
-// 2. BUSCAR por Especialidade
+export const listarTodosMedicos = listarMedicos;
+
 export const buscarMedicosPorEspecialidade = async (especialidade) => {
     try {
-        // Ajustado para garantir que a barra não falte na URL
         const url = `${MEDICOS_API_BASE_URL}/especialidade?nome=${encodeURIComponent(especialidade)}`;
         const response = await fetch(url, {
             method: 'GET',
@@ -55,7 +55,25 @@ export const buscarMedicosPorEspecialidade = async (especialidade) => {
     }
 };
 
-// 3. CRIAR Novo Médico
+export const buscarMedicoPorId = async (id) => {
+    try {
+        const response = await fetch(`${MEDICOS_API_BASE_URL}/${id}`, {
+            method: 'GET',
+            headers: getAuthHeaders(),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Erro ao buscar dados do médico.');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Erro em buscarMedicoPorId:', error);
+        throw error;
+    }
+};
+
 export const criarMedico = async (medicoData) => { 
     try {
         const response = await fetch(MEDICOS_API_BASE_URL, {
@@ -76,7 +94,6 @@ export const criarMedico = async (medicoData) => {
     }
 };
 
-// 4. ATUALIZAR Médico
 export const atualizarMedico = async (id, medicoData) => {
     try {
         const response = await fetch(`${MEDICOS_API_BASE_URL}/${id}`, {
@@ -97,7 +114,6 @@ export const atualizarMedico = async (id, medicoData) => {
     }
 };
 
-// 5. REMOVER Médico (CORRIGIDO)
 export const removerMedico = async (id) => {
     try {
         const response = await fetch(`${MEDICOS_API_BASE_URL}/${id}`, {
@@ -105,13 +121,11 @@ export const removerMedico = async (id) => {
             headers: getAuthHeaders(),
         });
 
-        // Correção na lógica do 204 No Content
         if (response.status === 204) {
-            return true; // Sucesso total, nada para ler no body
+            return true; 
         }
 
         if (!response.ok) {
-            // Tenta ler o erro se o status não for sucesso
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.message || 'Erro ao remover médico.');
         }

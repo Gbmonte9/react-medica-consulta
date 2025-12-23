@@ -2,26 +2,21 @@
 
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { criarPaciente } from '../../api/pacienteService'; // Importação CORRETA
+import { criarPaciente } from '../../api/pacienteService';
 
 function Register() {
-    // 1. Estado de Formulário
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [cpf, setCpf] = useState(''); 
     const [phone, setPhone] = useState(''); 
     
-    // 2. Estado de Carregamento/Resposta
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(false);
     
     const navigate = useNavigate();
 
-    // ----------------------------------------------------
-    // Função: Submissão do Registro
-    // ----------------------------------------------------
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
@@ -29,120 +24,128 @@ function Register() {
         setLoading(true);
 
         try {
-            // 🚨 CORREÇÃO APLICADA: Chamando criarPaciente
-            await criarPaciente({ 
-                nome: name, 
-                email: email, 
-                senha: password, 
-                cpf: cpf, 
-                telefone: phone 
-            }); 
-            
+            await criarPaciente({ nome: name, email, senha: password, cpf, telefone: phone }); 
             setSuccess(true);
-            
-            setTimeout(() => {
-                navigate('/login'); 
-            }, 2000);
-
+            setTimeout(() => navigate('/login'), 2000);
         } catch (err) {
-            console.error(err);
-            setError(err.message || 'Erro ao criar conta. Tente novamente.');
+            setError(err.message || 'Erro ao criar conta.');
         } finally {
             setLoading(false);
         }
     };
 
-    // ----------------------------------------------------
-    // 3. Renderização
-    // ----------------------------------------------------
     return (
-        <div className="container mt-5">
-            <div className="row justify-content-center">
-                <div className="col-md-6 col-lg-4">
-                    <div className="card bg-dark text-white border-primary p-4 shadow">
-                        <h2 className="text-center mb-4">Criar Conta (Paciente)</h2>
-                        
-                        {success && <div className="alert alert-success">Conta criada com sucesso! Redirecionando...</div>}
-                        {error && <div className="alert alert-danger">{error}</div>}
-
-                        <form onSubmit={handleSubmit}>
-                            
-                            {/* Campo Nome */}
-                            <div className="mb-3">
-                                <label htmlFor="name" className="form-label">Nome Completo</label>
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    id="name"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            
-                            {/* Campo Email */}
-                            <div className="mb-3">
-                                <label htmlFor="email" className="form-label">Email</label>
-                                <input
-                                    type="email"
-                                    className="form-control"
-                                    id="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            
-                            {/* Campo CPF */}
-                            <div className="mb-3">
-                                <label htmlFor="cpf" className="form-label">CPF</label>
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    id="cpf"
-                                    value={cpf}
-                                    onChange={(e) => setCpf(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            
-                            {/* CAMPO TELEFONE */}
-                            <div className="mb-3">
-                                <label htmlFor="phone" className="form-label">Telefone (Ex: 99 99999-9999)</label>
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    id="phone"
-                                    value={phone}
-                                    onChange={(e) => setPhone(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            
-                            {/* Campo Senha */}
-                            <div className="mb-3">
-                                <label htmlFor="password" className="form-label">Senha</label>
-                                <input
-                                    type="password"
-                                    className="form-control"
-                                    id="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                />
-                            </div>
-
-                            <button type="submit" className="btn btn-primary w-100" disabled={loading}>
-                                {loading ? 'Criando...' : 'Registrar'}
-                            </button>
-                        </form>
-                        
-                        <div className="mt-3 text-center">
-                            <p>Já tem uma conta? <Link to="/login" className="text-decoration-none text-info">Fazer Login</Link></p>
+        <div className="min-vh-100 d-flex align-items-center justify-content-center p-3 py-5" 
+             style={{ backgroundColor: '#f8f9fa', fontFamily: "'Inter', sans-serif" }}>
+            
+            <div className="card border-0 shadow-sm animate__animated animate__fadeIn" 
+                 style={{ maxWidth: '480px', width: '100%', borderRadius: '20px', border: '1px solid #dee2e6' }}>
+                
+                <div className="bg-white p-4 text-center border-bottom">
+                    <div className="d-flex align-items-center justify-content-center gap-2 mb-2">
+                        <div className="bg-primary rounded-circle d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
+                            <span className="text-white fw-bold">A</span>
                         </div>
+                        <h4 className="mb-0 fw-black text-dark tracking-tighter uppercase">MED<span className="text-primary">ADMIN</span></h4>
+                    </div>
+                    <p className="text-muted small fw-bold uppercase tracking-wider mb-0" style={{ fontSize: '10px' }}>Cadastro de Paciente</p>
+                </div>
+
+                <div className="card-body p-4 p-md-5 bg-white">
+                    {success && (
+                        <div className="alert alert-success border-0 fw-bold text-center mb-4 py-3" 
+                             style={{ borderRadius: '12px', fontSize: '12px' }}>
+                            ✅ Conta criada! Redirecionando...
+                        </div>
+                    )}
+
+                    {error && (
+                        <div className="alert alert-danger border-0 fw-bold text-center mb-4 py-3 animate__animated animate__shakeX" 
+                             style={{ borderRadius: '12px', fontSize: '12px' }}>
+                            ⚠️ {error}
+                        </div>
+                    )}
+
+                    <form onSubmit={handleSubmit}>
+                        <div className="mb-3">
+                            <label className="form-label text-secondary fw-bold uppercase mb-1" style={{ fontSize: '10px' }}>Nome Completo</label>
+                            <input
+                                type="text"
+                                className="form-control border bg-light shadow-none fw-medium"
+                                style={{ borderRadius: '10px', fontSize: '14px' }}
+                                placeholder="Ex: Maria Oliveira"
+                                value={name} onChange={(e) => setName(e.target.value)} required
+                            />
+                        </div>
+
+                        <div className="row">
+                            <div className="col-md-6 mb-3">
+                                <label className="form-label text-secondary fw-bold uppercase mb-1" style={{ fontSize: '10px' }}>CPF</label>
+                                <input
+                                    type="text"
+                                    className="form-control border bg-light shadow-none fw-medium"
+                                    style={{ borderRadius: '10px', fontSize: '14px' }}
+                                    placeholder="000.000.000-00"
+                                    value={cpf} onChange={(e) => setCpf(e.target.value)} required
+                                />
+                            </div>
+                            <div className="col-md-6 mb-3">
+                                <label className="form-label text-secondary fw-bold uppercase mb-1" style={{ fontSize: '10px' }}>Telefone</label>
+                                <input
+                                    type="text"
+                                    className="form-control border bg-light shadow-none fw-medium"
+                                    style={{ borderRadius: '10px', fontSize: '14px' }}
+                                    placeholder="(99) 99999-9999"
+                                    value={phone} onChange={(e) => setPhone(e.target.value)} required
+                                />
+                            </div>
+                        </div>
+
+                        <div className="mb-3">
+                            <label className="form-label text-secondary fw-bold uppercase mb-1" style={{ fontSize: '10px' }}>E-mail</label>
+                            <input
+                                type="email"
+                                className="form-control border bg-light shadow-none fw-medium"
+                                style={{ borderRadius: '10px', fontSize: '14px' }}
+                                placeholder="seu@email.com"
+                                value={email} onChange={(e) => setEmail(e.target.value)} required
+                            />
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="form-label text-secondary fw-bold uppercase mb-1" style={{ fontSize: '10px' }}>Defina uma Senha</label>
+                            <input
+                                type="password"
+                                className="form-control border bg-light shadow-none fw-medium"
+                                style={{ borderRadius: '10px', fontSize: '14px' }}
+                                placeholder="••••••••"
+                                value={password} onChange={(e) => setPassword(e.target.value)} required
+                            />
+                        </div>
+
+                        <button
+                            type="submit"
+                            className="btn btn-primary btn-lg w-100 fw-black uppercase py-3 shadow-sm mb-4 border-0"
+                            style={{ borderRadius: '12px', transition: 'all 0.3s ease', letterSpacing: '1px', fontSize: '14px' }}
+                            disabled={loading}
+                        >
+                            {loading ? 'Processando...' : 'Finalizar Cadastro'}
+                        </button>
+                    </form>
+                    
+                    <div className="text-center pt-3 border-top">
+                        <p className="small fw-bold text-muted mb-0">
+                            Já possui conta? <Link to="/login" className="text-primary fw-black text-decoration-none">VOLTAR AO LOGIN</Link>
+                        </p>
                     </div>
                 </div>
             </div>
+            <style>{`
+                .fw-black { font-weight: 900; }
+                .btn-primary { background-color: #0d6efd; }
+                .btn-primary:hover { background: #0056b3; transform: translateY(-1px); }
+                .form-control:focus { border-color: #0d6efd !important; background: #fff !important; }
+            `}</style>
         </div>
     );
 }
