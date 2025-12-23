@@ -2,25 +2,43 @@
 
 const API_BASE_URL = 'http://localhost:8080/api/auth';
 
-export const setAuthData = (token, role, userId) => {
-    localStorage.setItem('token', token);
-    localStorage.setItem('role', role);
-    localStorage.setItem('userId', userId);
+/**
+ * Salva os dados de autenticação com segurança no localStorage.
+ */
+export const setAuthData = (token, role, userId, nome, email, telefone, cpf, crm, especialidade) => {
+    if (token) localStorage.setItem('token', token);
+    if (role) localStorage.setItem('role', role);
+    if (userId) localStorage.setItem('userId', userId);
+    if (nome) localStorage.setItem('userName', nome);
+    
+    // Salva campos opcionais apenas se existirem (evita salvar a string "null")
+    localStorage.setItem('userEmail', email || '');
+    localStorage.setItem('userTelefone', telefone || '');
+    localStorage.setItem('userCpf', cpf || '');           
+    localStorage.setItem('userCrm', crm || '');           
+    localStorage.setItem('userEspecialidade', especialidade || ''); 
 };
 
+// Funções de busca de dados (Getters)
 export const getToken = () => localStorage.getItem('token');
 export const getRole = () => localStorage.getItem('role');
 export const getUserId = () => localStorage.getItem('userId');
+export const getUserName = () => localStorage.getItem('userName');
+export const getUserEmail = () => localStorage.getItem('userEmail');
+export const getUserTelefone = () => localStorage.getItem('userTelefone');
+export const getUserCpf = () => localStorage.getItem('userCpf'); 
+export const getUserCrm = () => localStorage.getItem('userCrm');
+export const getUserEspecialidade = () => localStorage.getItem('userEspecialidade'); 
 
+/**
+ * Remove todos os dados e encerra a sessão.
+ */
 export const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    localStorage.removeItem('userId');
+    localStorage.clear(); // Limpa tudo de uma vez de forma segura
 };
 
 /**
- * FUNÇÃO PRINCIPAL DE LOGIN
- * Conecta com o backend real para obter um token JWT válido
+ * Conecta com o backend Java Spring Boot para realizar o login.
  */
 export const login = async (email, senha) => {
     try {
@@ -35,48 +53,42 @@ export const login = async (email, senha) => {
             })
         });
 
-        // 1. TRATAMENTO DE ERROS (401, 403, 500)
         if (!response.ok) {
-            let errorMessage = 'Falha na autenticação. Verifique e-mail e senha.';
-            
-            // Verifica se o erro é 401 (Credenciais erradas)
             if (response.status === 401) {
                 throw new Error('E-mail ou senha incorretos.');
             }
-
-            // Tenta ler a mensagem de erro detalhada do Spring
-            try {
-                const contentType = response.headers.get("content-type");
-                if (contentType && contentType.includes("application/json")) {
-                    const errorData = await response.json();
-                    errorMessage = errorData.message || errorData.error || errorMessage;
-                }
-            } catch (e) {
-                console.warn("Não foi possível processar o corpo do erro.");
-            }
             
-            throw new Error(errorMessage);
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Falha na autenticação.');
         }
 
         const data = await response.json(); 
         
-        const token = data.token;
-        const role = data.tipo || data.role; // Tenta pegar tipo ou role
-        const userId = data.id || data.userId;
-
-        if (!token) {
+        // Verifica se o token veio na resposta
+        if (!data.token) {
             throw new Error('Token não recebido do servidor.');
         }
 
-        setAuthData(token, role, userId); 
+        // Salva no localStorage usando a função auxiliar
+        setAuthData(
+            data.token, 
+            data.role, 
+            data.id, // Mapeia 'id' do Java para 'userId'
+            data.nome, 
+            data.email, 
+            data.telefone, 
+            data.cpf, 
+            data.crm, 
+            data.especialidade
+        ); 
         
-        return { token, role, userId };
+        return data; // Retorna o objeto completo recebido do backend
 
     } catch (error) {
         console.error('Erro no authService:', error);
         
         if (error.message.includes('Failed to fetch')) {
-            throw new Error('Servidor offline. Verifique se o Java está rodando na porta 8080.');
+            throw new Error('Servidor offline. Verifique se o backend está rodando na porta 8080.');
         }
         
         throw error;

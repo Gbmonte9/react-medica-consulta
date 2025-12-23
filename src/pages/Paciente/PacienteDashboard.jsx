@@ -12,49 +12,64 @@ function PatientDashboard() {
     const [proximaConsulta, setProximaConsulta] = useState(null);
     const [estatisticas, setEstatisticas] = useState({
         totalConsultas: 0,
-        receitasAtivas: 0, // Esses valores podem vir de outros serviços futuramente
+        receitasAtivas: 0,
         examesPendentes: 0
     });
 
+    // LÓGICA PARA PEGAR O NOME REAL (Igual ao Layout)
+    const getNomeExibicao = () => {
+        if (user?.nome && user.nome !== 'sessao_ativa') {
+            return user.nome.split(' ')[0]; // Pega só o primeiro nome (ex: Gabriel)
+        }
+        if (user?.email) {
+            const parteEmail = user.email.split('@')[0];
+            return parteEmail.charAt(0).toUpperCase() + parteEmail.slice(1);
+        }
+        return 'Paciente';
+    };
+
+    const nomeParaExibir = getNomeExibicao();
+
     useEffect(() => {
         const carregarDados = async () => {
-            try {
-                setIsLoading(true);
-                const consultas = await listarMinhasConsultas();
-                
-                if (consultas && consultas.length > 0) {
-                    // 1. Filtrar consultas agendadas para o futuro
-                    const agora = new Date();
-                    const futuras = consultas
-                        .filter(c => c.status === 'AGENDADA' && new Date(c.dataHora) > agora)
-                        .sort((a, b) => new Date(a.dataHora) - new Date(b.dataHora));
+            if (user?.id) {
+                try {
+                    setIsLoading(true);
+                    const consultas = await listarMinhasConsultas(user.id);
+                    
+                    if (consultas && Array.isArray(consultas)) {
+                        const agora = new Date();
+                        
+                        const futuras = consultas
+                            .filter(c => c.status === 'AGENDADA' && new Date(c.dataHora) > agora)
+                            .sort((a, b) => new Date(a.dataHora) - new Date(b.dataHora));
 
-                    if (futuras.length > 0) {
-                        setProximaConsulta(futuras[0]);
+                        if (futuras.length > 0) {
+                            setProximaConsulta(futuras[0]);
+                        }
+
+                        setEstatisticas(prev => ({
+                            ...prev,
+                            totalConsultas: consultas.length
+                        }));
                     }
-
-                    // 2. Atualizar estatística de consultas totais
-                    setEstatisticas(prev => ({
-                        ...prev,
-                        totalConsultas: consultas.length
-                    }));
+                } catch (error) {
+                    console.error("Erro ao carregar dashboard:", error);
+                } finally {
+                    setIsLoading(false);
                 }
-            } catch (error) {
-                console.error("Erro ao carregar dashboard:", error);
-            } finally {
-                setIsLoading(false);
             }
         };
 
         carregarDados();
-    }, [setIsLoading]);
+    }, [user, setIsLoading]);
 
     return (
         <div className="animate__animated animate__fadeIn">
-            {/* BOAS VINDAS */}
+            {/* BOAS VINDAS CORRIGIDO */}
             <div className="mb-5">
                 <h2 className="fw-black text-dark uppercase tracking-tighter mb-1">
-                    Olá, {user?.nome?.split(' ')[0] || 'Paciente'}! 👋
+                    Olá, {nomeParaExibir}! 👋
                 </h2>
                 <p className="text-muted small fw-bold uppercase">
                     Bem-vindo à sua central de saúde. Confira seus próximos passos.
@@ -153,6 +168,9 @@ function PatientDashboard() {
                 .bg-info { background-color: #0dcaf0 !important; }
                 .text-info { color: #0dcaf0 !important; }
                 .border-info { border-color: #0dcaf0 !important; }
+                .btn-info { background-color: #0dcaf0 !important; border-color: #0dcaf0 !important; }
+                .btn-outline-info { color: #0dcaf0 !important; border-color: #0dcaf0 !important; }
+                .btn-outline-info:hover { background-color: #0dcaf0 !important; color: white !important; }
             `}</style>
         </div>
     );

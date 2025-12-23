@@ -11,16 +11,31 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    const [role, setRole] = useState(authService.getRole());
+    const [role, setRole] = useState(null); 
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const token = authService.getToken();
         const storedRole = authService.getRole();
         const userId = authService.getUserId();
+        const userName = authService.getUserName();
+        
+        const userEmail = localStorage.getItem('userEmail');
+        const userTelefone = localStorage.getItem('userTelefone');
+        const userCpf = localStorage.getItem('userCpf');           
+        const userCrm = localStorage.getItem('userCrm');           
+        const userEspecialidade = localStorage.getItem('userEspecialidade'); 
 
-        if (token && storedRole) {
-            setUser({ id: userId, email: 'sessao_ativa' }); 
+        if (token && storedRole && userId) {
+            setUser({ 
+                id: userId, 
+                nome: userName,
+                email: userEmail,
+                telefone: userTelefone,
+                cpf: userCpf,             
+                crm: userCrm,             
+                especialidade: userEspecialidade 
+            }); 
             setRole(storedRole);
         }
         setIsLoading(false);
@@ -29,17 +44,22 @@ export const AuthProvider = ({ children }) => {
     const handleLogin = async (email, senha) => {
         setIsLoading(true);
         try {
-
             const responseData = await authService.login(email, senha); 
             
             setRole(responseData.role);
-            setUser({ id: responseData.userId, email: email });
+            setUser({ 
+                id: responseData.userId, 
+                nome: responseData.nome,
+                email: responseData.email,
+                telefone: responseData.telefone,
+                cpf: responseData.cpf,             
+                crm: responseData.crm,             
+                especialidade: responseData.especialidade 
+            });
 
             return true; 
         } catch (error) {
-            authService.logout();
-            setUser(null);
-            setRole(null);
+            handleLogout();
             throw error; 
         } finally {
             setIsLoading(false);
@@ -55,7 +75,7 @@ export const AuthProvider = ({ children }) => {
     const value = {
         user,
         role,
-        isLoggedIn: !!user || !!role, 
+        isLoggedIn: !!user, 
         isLoading,
         login: handleLogin,
         logout: handleLogout,
@@ -63,7 +83,7 @@ export const AuthProvider = ({ children }) => {
 
     return (
         <AuthContext.Provider value={value}>
-            {children}
+            {!isLoading && children}
         </AuthContext.Provider>
     );
 };
