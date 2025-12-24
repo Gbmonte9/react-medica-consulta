@@ -1,4 +1,4 @@
-// src/pages/Register.jsx
+// src/pages/Auth/Register.jsx
 
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -26,6 +26,7 @@ function Register() {
         try {
             await criarPaciente({ nome: name, email, senha: password, cpf, telefone: phone }); 
             setSuccess(true);
+            // Redireciona após 2 segundos para o usuário ver o feedback de sucesso
             setTimeout(() => navigate('/login'), 2000);
         } catch (err) {
             setError(err.message || 'Erro ao criar conta.');
@@ -36,43 +37,50 @@ function Register() {
 
     return (
         <div className="min-vh-100 d-flex align-items-center justify-content-center p-3 py-5" 
-             style={{ backgroundColor: '#f8f9fa', fontFamily: "'Inter', sans-serif" }}>
+             style={{ backgroundColor: '#f4f7f6', fontFamily: "'Inter', sans-serif" }}>
             
-            <div className="card border-0 shadow-sm animate__animated animate__fadeIn" 
-                 style={{ maxWidth: '480px', width: '100%', borderRadius: '20px', border: '1px solid #dee2e6' }}>
+            <div className="card border-0 shadow-lg animate__animated animate__fadeInUp" 
+                 style={{ maxWidth: '500px', width: '100%', borderRadius: '28px', overflow: 'hidden' }}>
                 
-                <div className="bg-white p-4 text-center border-bottom">
+                {/* Header - Alinhado com o novo Login */}
+                <div className="bg-white p-4 p-md-5 text-center border-bottom">
                     <div className="d-flex align-items-center justify-content-center gap-2 mb-2">
-                        <div className="bg-primary rounded-circle d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
-                            <span className="text-white fw-bold">A</span>
+                        <div className="bg-dark rounded-4 d-flex align-items-center justify-content-center shadow-sm" 
+                             style={{ width: '45px', height: '45px', transform: 'rotate(-10deg)' }}>
+                            <span className="text-white fw-black fs-5">+</span>
                         </div>
-                        <h4 className="mb-0 fw-black text-dark tracking-tighter uppercase">MED<span className="text-primary">ADMIN</span></h4>
+                        <h3 className="mb-0 fw-black text-dark tracking-tighter">
+                            HEALTH<span className="text-primary">SYS</span>
+                        </h3>
                     </div>
-                    <p className="text-muted small fw-bold uppercase tracking-wider mb-0" style={{ fontSize: '10px' }}>Cadastro de Paciente</p>
+                    <p className="text-muted small fw-bold uppercase tracking-widest mb-0" style={{ fontSize: '10px' }}>
+                        Crie sua conta de Paciente
+                    </p>
                 </div>
 
                 <div className="card-body p-4 p-md-5 bg-white">
                     {success && (
-                        <div className="alert alert-success border-0 fw-bold text-center mb-4 py-3" 
-                             style={{ borderRadius: '12px', fontSize: '12px' }}>
-                            ✅ Conta criada! Redirecionando...
+                        <div className="alert alert-success border-0 fw-bold text-center mb-4 py-3 animate__animated animate__bounceIn" 
+                             style={{ borderRadius: '15px', fontSize: '13px' }}>
+                            ✅ Conta criada com sucesso! <br/>
+                            <small className="fw-normal">Redirecionando para o login...</small>
                         </div>
                     )}
 
                     {error && (
                         <div className="alert alert-danger border-0 fw-bold text-center mb-4 py-3 animate__animated animate__shakeX" 
-                             style={{ borderRadius: '12px', fontSize: '12px' }}>
+                             style={{ borderRadius: '15px', fontSize: '13px' }}>
                             ⚠️ {error}
                         </div>
                     )}
 
                     <form onSubmit={handleSubmit}>
                         <div className="mb-3">
-                            <label className="form-label text-secondary fw-bold uppercase mb-1" style={{ fontSize: '10px' }}>Nome Completo</label>
+                            <label className="form-label text-secondary fw-bold uppercase mb-1" style={{ fontSize: '11px' }}>Nome Completo</label>
                             <input
                                 type="text"
-                                className="form-control border bg-light shadow-none fw-medium"
-                                style={{ borderRadius: '10px', fontSize: '14px' }}
+                                className="form-control form-control-lg border-2 bg-light shadow-none fw-medium"
+                                style={{ borderRadius: '14px', fontSize: '15px' }}
                                 placeholder="Ex: Maria Oliveira"
                                 value={name} onChange={(e) => setName(e.target.value)} required
                             />
@@ -80,21 +88,21 @@ function Register() {
 
                         <div className="row">
                             <div className="col-md-6 mb-3">
-                                <label className="form-label text-secondary fw-bold uppercase mb-1" style={{ fontSize: '10px' }}>CPF</label>
+                                <label className="form-label text-secondary fw-bold uppercase mb-1" style={{ fontSize: '11px' }}>CPF</label>
                                 <input
                                     type="text"
-                                    className="form-control border bg-light shadow-none fw-medium"
-                                    style={{ borderRadius: '10px', fontSize: '14px' }}
+                                    className="form-control form-control-lg border-2 bg-light shadow-none fw-medium"
+                                    style={{ borderRadius: '14px', fontSize: '15px' }}
                                     placeholder="000.000.000-00"
                                     value={cpf} onChange={(e) => setCpf(e.target.value)} required
                                 />
                             </div>
                             <div className="col-md-6 mb-3">
-                                <label className="form-label text-secondary fw-bold uppercase mb-1" style={{ fontSize: '10px' }}>Telefone</label>
+                                <label className="form-label text-secondary fw-bold uppercase mb-1" style={{ fontSize: '11px' }}>Telefone</label>
                                 <input
                                     type="text"
-                                    className="form-control border bg-light shadow-none fw-medium"
-                                    style={{ borderRadius: '10px', fontSize: '14px' }}
+                                    className="form-control form-control-lg border-2 bg-light shadow-none fw-medium"
+                                    style={{ borderRadius: '14px', fontSize: '15px' }}
                                     placeholder="(99) 99999-9999"
                                     value={phone} onChange={(e) => setPhone(e.target.value)} required
                                 />
@@ -102,22 +110,22 @@ function Register() {
                         </div>
 
                         <div className="mb-3">
-                            <label className="form-label text-secondary fw-bold uppercase mb-1" style={{ fontSize: '10px' }}>E-mail</label>
+                            <label className="form-label text-secondary fw-bold uppercase mb-1" style={{ fontSize: '11px' }}>E-mail pessoal</label>
                             <input
                                 type="email"
-                                className="form-control border bg-light shadow-none fw-medium"
-                                style={{ borderRadius: '10px', fontSize: '14px' }}
+                                className="form-control form-control-lg border-2 bg-light shadow-none fw-medium"
+                                style={{ borderRadius: '14px', fontSize: '15px' }}
                                 placeholder="seu@email.com"
                                 value={email} onChange={(e) => setEmail(e.target.value)} required
                             />
                         </div>
 
                         <div className="mb-4">
-                            <label className="form-label text-secondary fw-bold uppercase mb-1" style={{ fontSize: '10px' }}>Defina uma Senha</label>
+                            <label className="form-label text-secondary fw-bold uppercase mb-1" style={{ fontSize: '11px' }}>Defina uma Senha Segura</label>
                             <input
                                 type="password"
-                                className="form-control border bg-light shadow-none fw-medium"
-                                style={{ borderRadius: '10px', fontSize: '14px' }}
+                                className="form-control form-control-lg border-2 bg-light shadow-none fw-medium"
+                                style={{ borderRadius: '14px', fontSize: '15px' }}
                                 placeholder="••••••••"
                                 value={password} onChange={(e) => setPassword(e.target.value)} required
                             />
@@ -125,26 +133,38 @@ function Register() {
 
                         <button
                             type="submit"
-                            className="btn btn-primary btn-lg w-100 fw-black uppercase py-3 shadow-sm mb-4 border-0"
-                            style={{ borderRadius: '12px', transition: 'all 0.3s ease', letterSpacing: '1px', fontSize: '14px' }}
+                            className="btn btn-primary btn-lg w-100 fw-black uppercase py-3 border-0 shadow-sm transition-all mb-4"
+                            style={{ borderRadius: '14px', fontSize: '14px', letterSpacing: '1px' }}
                             disabled={loading}
                         >
+                            {loading ? (
+                                <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                            ) : null}
                             {loading ? 'Processando...' : 'Finalizar Cadastro'}
                         </button>
                     </form>
                     
                     <div className="text-center pt-3 border-top">
                         <p className="small fw-bold text-muted mb-0">
-                            Já possui conta? <Link to="/login" className="text-primary fw-black text-decoration-none">VOLTAR AO LOGIN</Link>
+                            Já possui uma conta? <Link to="/login" className="text-primary fw-black text-decoration-none">VOLTAR AO LOGIN</Link>
                         </p>
                     </div>
                 </div>
+
+                <div className="bg-light p-3 text-center border-top">
+                    <span className="text-muted fw-bold" style={{ fontSize: '10px' }}>
+                        ✅ SEUS DADOS ESTÃO PROTEGIDOS (LGPD)
+                    </span>
+                </div>
             </div>
+
             <style>{`
                 .fw-black { font-weight: 900; }
-                .btn-primary { background-color: #0d6efd; }
-                .btn-primary:hover { background: #0056b3; transform: translateY(-1px); }
-                .form-control:focus { border-color: #0d6efd !important; background: #fff !important; }
+                .tracking-tighter { letter-spacing: -1px; }
+                .btn-primary { background: linear-gradient(45deg, #0d6efd, #0056b3); }
+                .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(13,110,253,0.3); }
+                .form-control:focus { background-color: #fff !important; border-color: #0d6efd; }
+                .animate__animated.animate__fadeInUp { --animate-duration: 0.6s; }
             `}</style>
         </div>
     );

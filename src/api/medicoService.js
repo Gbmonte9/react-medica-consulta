@@ -15,13 +15,13 @@ const getAuthHeaders = () => {
 // 1. LISTAR Todos os Médicos
 export const listarMedicos = async () => {
     try {
-        const response = await fetch(MEDICOS_API_BASE_URL, {
+        const response = await fetch(`${MEDICOS_API_BASE_URL}`, {
             method: 'GET',
             headers: getAuthHeaders(),
         });
 
         if (!response.ok) {
-            if (response.status === 403) throw new Error('Acesso negado. Requer papel de Administrador.');
+            if (response.status === 403) throw new Error('Acesso negado. Requer permissão de administrador.');
             const errorData = await response.json().catch(() => ({})); 
             throw new Error(errorData.message || 'Erro ao listar médicos.');
         }
@@ -35,6 +35,7 @@ export const listarMedicos = async () => {
 
 export const listarTodosMedicos = listarMedicos;
 
+// 2. BUSCAR por Especialidade
 export const buscarMedicosPorEspecialidade = async (especialidade) => {
     try {
         const url = `${MEDICOS_API_BASE_URL}/especialidade?nome=${encodeURIComponent(especialidade)}`;
@@ -45,7 +46,7 @@ export const buscarMedicosPorEspecialidade = async (especialidade) => {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || `Erro ao buscar médicos por especialidade.`);
+            throw new Error(errorData.message || 'Erro ao buscar médicos por especialidade.');
         }
 
         return await response.json();
@@ -55,9 +56,11 @@ export const buscarMedicosPorEspecialidade = async (especialidade) => {
     }
 };
 
+// 3. BUSCAR Médico por ID
 export const buscarMedicoPorId = async (id) => {
+    if (!id) throw new Error("ID do médico não fornecido.");
     try {
-        const response = await fetch(`${MEDICOS_API_BASE_URL}/${id}`, {
+        const response = await fetch(`${MEDICOS_API_BASE_URL}/${id.toString().trim()}`, {
             method: 'GET',
             headers: getAuthHeaders(),
         });
@@ -74,9 +77,10 @@ export const buscarMedicoPorId = async (id) => {
     }
 };
 
+// 4. CRIAR Novo Médico
 export const criarMedico = async (medicoData) => { 
     try {
-        const response = await fetch(MEDICOS_API_BASE_URL, {
+        const response = await fetch(`${MEDICOS_API_BASE_URL}`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify(medicoData),
@@ -94,17 +98,26 @@ export const criarMedico = async (medicoData) => {
     }
 };
 
+// 5. ATUALIZAÇÃO GERAL (PUT)
 export const atualizarMedico = async (id, medicoData) => {
+    if (!id) throw new Error("ID não identificado para atualização.");
+    
     try {
-        const response = await fetch(`${MEDICOS_API_BASE_URL}/${id}`, {
+        const url = `${MEDICOS_API_BASE_URL}/${id.toString().trim()}`;
+        
+        const response = await fetch(url, {
             method: 'PUT',
             headers: getAuthHeaders(),
             body: JSON.stringify(medicoData),
         });
 
+        if (response.status === 404) {
+            throw new Error('Médico não encontrado no servidor. O registro pode ter sido removido.');
+        }
+
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || 'Erro ao atualizar médico.');
+            throw new Error(errorData.message || 'Erro ao atualizar dados do médico.');
         }
 
         return await response.json();
@@ -114,16 +127,21 @@ export const atualizarMedico = async (id, medicoData) => {
     }
 };
 
+// 6. ATUALIZAÇÃO DE PERFIL
+export const atualizarPerfilMedico = async (id, dadosPerfil) => {
+    return await atualizarMedico(id, dadosPerfil);
+};
+
+// 7. REMOVER Médico
 export const removerMedico = async (id) => {
+    if (!id) throw new Error("ID necessário para remoção.");
     try {
-        const response = await fetch(`${MEDICOS_API_BASE_URL}/${id}`, {
+        const response = await fetch(`${MEDICOS_API_BASE_URL}/${id.toString().trim()}`, {
             method: 'DELETE',
             headers: getAuthHeaders(),
         });
 
-        if (response.status === 204) {
-            return true; 
-        }
+        if (response.status === 204) return true; 
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));

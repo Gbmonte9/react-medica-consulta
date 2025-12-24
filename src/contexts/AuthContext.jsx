@@ -20,6 +20,7 @@ export const AuthProvider = ({ children }) => {
         const userId = authService.getUserId();
         const userName = authService.getUserName();
         
+        // Recupera dados adicionais (Médico ou Paciente)
         const userEmail = localStorage.getItem('userEmail');
         const userTelefone = localStorage.getItem('userTelefone');
         const userCpf = localStorage.getItem('userCpf');           
@@ -36,7 +37,8 @@ export const AuthProvider = ({ children }) => {
                 crm: userCrm,             
                 especialidade: userEspecialidade 
             }); 
-            setRole(storedRole);
+            // Normaliza para facilitar as verificações de rota
+            setRole(storedRole.toUpperCase());
         }
         setIsLoading(false);
     }, []);
@@ -46,7 +48,9 @@ export const AuthProvider = ({ children }) => {
         try {
             const responseData = await authService.login(email, senha); 
             
-            setRole(responseData.role);
+            const userRole = responseData.role.toUpperCase();
+            
+            setRole(userRole);
             setUser({ 
                 id: responseData.userId, 
                 nome: responseData.nome,
@@ -59,7 +63,7 @@ export const AuthProvider = ({ children }) => {
 
             return true; 
         } catch (error) {
-            handleLogout();
+            if (error.status === 401) handleLogout();
             throw error; 
         } finally {
             setIsLoading(false);
@@ -72,8 +76,10 @@ export const AuthProvider = ({ children }) => {
         setRole(null);
     };
 
+    // O segredo está aqui: incluímos o setUser no value para os componentes usarem
     const value = {
         user,
+        setUser, // <--- Adicionado para permitir atualizações manuais do perfil
         role,
         isLoggedIn: !!user, 
         isLoading,

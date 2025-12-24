@@ -4,15 +4,19 @@ const API_BASE_URL = 'http://localhost:8080/api/auth';
 
 /**
  * Salva os dados de autenticação com segurança no localStorage.
+ * Normaliza os dados para evitar erros de comparação no Front-end.
  */
 export const setAuthData = (token, role, userId, nome, email, telefone, cpf, crm, especialidade) => {
     if (token) localStorage.setItem('token', token);
-    if (role) localStorage.setItem('role', role);
+    
+    // Salva o Role sempre em MAIÚSCULO para evitar erros de rota
+    if (role) localStorage.setItem('role', role.toUpperCase());
+    
     if (userId) localStorage.setItem('userId', userId);
     if (nome) localStorage.setItem('userName', nome);
     
-    // Salva campos opcionais apenas se existirem (evita salvar a string "null")
-    localStorage.setItem('userEmail', email || '');
+    // Salva campos opcionais apenas se existirem (evita salvar a string "null" ou "undefined")
+    localStorage.setItem('userEmail', email?.trim() || '');
     localStorage.setItem('userTelefone', telefone || '');
     localStorage.setItem('userCpf', cpf || '');           
     localStorage.setItem('userCrm', crm || '');           
@@ -34,7 +38,7 @@ export const getUserEspecialidade = () => localStorage.getItem('userEspecialidad
  * Remove todos os dados e encerra a sessão.
  */
 export const logout = () => {
-    localStorage.clear(); // Limpa tudo de uma vez de forma segura
+    localStorage.clear(); 
 };
 
 /**
@@ -64,16 +68,17 @@ export const login = async (email, senha) => {
 
         const data = await response.json(); 
         
-        // Verifica se o token veio na resposta
+        // Verifica se o token veio na resposta (Proteção contra resposta vazia do backend)
         if (!data.token) {
             throw new Error('Token não recebido do servidor.');
         }
 
         // Salva no localStorage usando a função auxiliar
+        // Mapeamos data.id ou data.userId para garantir compatibilidade com o Spring
         setAuthData(
             data.token, 
             data.role, 
-            data.id, // Mapeia 'id' do Java para 'userId'
+            data.id || data.userId, 
             data.nome, 
             data.email, 
             data.telefone, 
@@ -82,7 +87,7 @@ export const login = async (email, senha) => {
             data.especialidade
         ); 
         
-        return data; // Retorna o objeto completo recebido do backend
+        return data; 
 
     } catch (error) {
         console.error('Erro no authService:', error);
