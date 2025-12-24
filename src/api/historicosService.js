@@ -1,10 +1,10 @@
+// src/api/historicosService.js
+
 import { getToken } from './authService';
 
-const HISTORICO_API_BASE_URL = 'http://localhost:8080/api/historico';
+// Verifique se no seu Controller Java está @RequestMapping("/api/historicos") com 's'
+const HISTORICO_API_BASE_URL = 'http://localhost:8080/api/historicos';
 
-/**
- * Monta os cabeçalhos de autenticação necessários para o Spring Security.
- */
 const getAuthHeaders = (contentType = 'application/json') => {
     const token = getToken();
     const headers = {
@@ -16,12 +16,8 @@ const getAuthHeaders = (contentType = 'application/json') => {
     return headers;
 };
 
-/**
- * Extrai mensagens de erro de forma detalhada.
- */
 const extractErrorMessage = async (response) => {
     if (response.status === 204) return null;
-    
     const contentType = response.headers.get('content-type');
     if (contentType && contentType.includes('application/json')) {
         try {
@@ -30,9 +26,28 @@ const extractErrorMessage = async (response) => {
                 return errorData.errors.map(err => err.defaultMessage || err.message).join('; ');
             }
             return errorData.message || errorData.error || `Erro ${response.status}`;
-        } catch (e) { /* ignore parse error */ }
+        } catch (e) { }
     }
     return `Erro na requisição: ${response.status}`;
+};
+
+/**
+ * NOVO: Busca todos os registros de histórico de um paciente específico
+ * Usado na tela de Prontuário Digital
+ */
+export const buscarHistoricosPorPacienteId = async (pacienteId) => {
+    const response = await fetch(`${HISTORICO_API_BASE_URL}/paciente/${pacienteId}`, {
+        method: 'GET',
+        headers: getAuthHeaders(null),
+    });
+    
+    if (response.status === 404) return []; // Retorna lista vazia se não houver registros
+    
+    if (!response.ok) {
+        const error = await extractErrorMessage(response);
+        throw new Error(error);
+    }
+    return await response.json();
 };
 
 export const registrarHistorico = async (historicoData) => {
@@ -41,7 +56,6 @@ export const registrarHistorico = async (historicoData) => {
         headers: getAuthHeaders(),
         body: JSON.stringify(historicoData),
     });
-    
     if (!response.ok) {
         const error = await extractErrorMessage(response);
         throw new Error(error);
@@ -54,7 +68,6 @@ export const buscarHistoricoPorId = async (id) => {
         method: 'GET',
         headers: getAuthHeaders(null),
     });
-    
     if (!response.ok) {
         const error = await extractErrorMessage(response);
         throw new Error(error);
@@ -67,17 +80,11 @@ export const buscarHistoricoPorConsultaId = async (consultaId) => {
         method: 'GET',
         headers: getAuthHeaders(null),
     });
-
-    if (response.status === 404) {
-        console.log("Nenhum histórico encontrado para esta consulta. Preparando novo registro...");
-        return null; 
-    }
-
+    if (response.status === 404) return null;
     if (!response.ok) {
         const error = await extractErrorMessage(response);
         throw new Error(error);
     }
-    
     return await response.json();
 };
 
@@ -87,7 +94,6 @@ export const atualizarHistorico = async (id, historicoData) => {
         headers: getAuthHeaders(),
         body: JSON.stringify(historicoData),
     });
-    
     if (!response.ok) {
         const error = await extractErrorMessage(response);
         throw new Error(error);
@@ -100,7 +106,6 @@ export const removerHistorico = async (id) => {
         method: 'DELETE',
         headers: getAuthHeaders(null),
     });
-    
     if (!response.ok) {
         const error = await extractErrorMessage(response);
         throw new Error(error);
@@ -116,11 +121,9 @@ export const gerarPdfHistoricoConsultas = async () => {
             'Accept': 'application/pdf'
         },
     });
-
     if (!response.ok) {
         const error = await extractErrorMessage(response);
         throw new Error(error || 'Falha ao gerar PDF');
     }
-    
     return await response.blob(); 
 };

@@ -1,163 +1,166 @@
-// src/pages/Medico/MedicoAtendimento.jsx
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLoading } from '../../contexts/LoadingContext';
+import { buscarConsultaPorId, finalizarConsulta } from '../../api/consultasService';
+import { registrarHistorico } from '../../api/historicosService'; 
+import { User, FileText, ClipboardList, ArrowLeft, Save } from 'lucide-react';
+import Swal from 'sweetalert2';
 
 function MedicoAtendimento() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { setIsLoading } = useLoading();
 
-    // Estados para dados do atendimento
-    const [paciente, setPaciente] = useState(null);
+    const [consulta, setConsulta] = useState(null);
     const [evolucao, setEvolucao] = useState('');
     const [prescricao, setPrescricao] = useState('');
-    const [diagnostico, setDiagnostico] = useState('');
+
+    const carregarDadosDaConsulta = useCallback(async () => {
+        if (!id) return;
+        setIsLoading(true);
+        try {
+            const data = await buscarConsultaPorId(id);
+            setConsulta(data);
+        } catch (error) {
+            console.error("Erro:", error);
+            Swal.fire('Erro', 'Não conseguimos carregar os dados.', 'error');
+            navigate('/medico/agenda');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [id, navigate, setIsLoading]);
 
     useEffect(() => {
-        const carregarDadosConsulta = async () => {
+        carregarDadosDaConsulta();
+    }, [carregarDadosDaConsulta]);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        
+        const confirmacao = await Swal.fire({
+            title: 'Finalizar?',
+            text: "Deseja salvar o prontuário e encerrar?",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#10b981',
+            confirmButtonText: 'Sim, finalizar'
+        });
+
+        if (confirmacao.isConfirmed) {
             setIsLoading(true);
             try {
-                // Simulação de busca de dados no backend
-                // No futuro: const data = await buscarConsultaPorId(id);
-                setTimeout(() => {
-                    setPaciente({
-                        nome: "Maria Silva",
-                        idade: 34,
-                        cpf: "123.456.789-00",
-                        motivo: "Dores de cabeça persistentes e cansaço.",
-                        historico: "Hipertensa, faz uso de Enalapril."
-                    });
-                    setIsLoading(false);
-                }, 800);
+                await registrarHistorico({
+                    consultaId: id,
+                    observacoes: evolucao,
+                    receita: prescricao
+                });
+                await finalizarConsulta(id);
+                await Swal.fire('Sucesso!', 'Atendimento concluído.', 'success');
+                navigate('/medico/agenda');
             } catch (error) {
-                console.error("Erro ao carregar consulta", error);
+                Swal.fire('Erro', 'Houve um problema ao salvar.', 'error');
+            } finally {
                 setIsLoading(false);
             }
-        };
-
-        carregarDadosConsulta();
-    }, [id, setIsLoading]);
-
-    const handleFinalizarAtendimento = (e) => {
-        e.preventDefault();
-        if (window.confirm("Deseja realmente finalizar este atendimento e salvar no histórico?")) {
-            console.log("Salvando:", { evolucao, prescricao, diagnostico });
-            alert("Atendimento finalizado com sucesso!");
-            navigate('/medico/agenda');
         }
     };
 
+    if (!consulta) return null;
+
     return (
-        <div className="animate__animated animate__fadeIn">
-            {/* Header de Atendimento */}
-            <div className="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+        <div className="container-fluid py-3 px-2 px-md-4 animate__animated animate__fadeIn">
+            {/* Header Responsivo */}
+            <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
                 <div>
-                    <span className="badge bg-success mb-2">ATENDIMENTO EM CURSO</span>
-                    <h2 className="fw-black text-dark tracking-tighter mb-0">Atendimento #{id}</h2>
-                </div>
-                <div className="text-end">
-                    <button onClick={() => navigate(-1)} className="btn btn-light border fw-bold rounded-pill px-4 me-2">
-                        Voltar
+                    <button 
+                        onClick={() => navigate('/medico/agenda')} 
+                        className="btn btn-link text-muted p-0 mb-2 d-flex align-items-center gap-1 text-decoration-none fw-bold small"
+                    >
+                        <ArrowLeft size={16} /> VOLTAR PARA AGENDA
                     </button>
+                    <h2 className="fw-black text-dark mb-0">Atendimento <span className="text-success">Ativo</span></h2>
                 </div>
+                <div className="d-md-none border-top pt-3"></div> {/* Divisor mobile */}
             </div>
 
             <div className="row g-4">
-                {/* COLUNA ESQUERDA: Ficha do Paciente */}
-                <div className="col-lg-4">
-                    <div className="card border-0 shadow-sm rounded-4 h-100 bg-light">
-                        <div className="card-body p-4">
-                            <h5 className="fw-bold text-success mb-4 d-flex align-items-center gap-2">
-                                👤 Ficha do Paciente
-                            </h5>
+                {/* Lateral: Info do Paciente */}
+                <div className="col-12 col-xl-4">
+                    <div className="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+                        <div className="card-header bg-white border-0 pt-4 px-4">
+                            <div className="d-flex align-items-center gap-2 mb-0">
+                                <div className="p-2 bg-success-subtle rounded-3 text-success">
+                                    <User size={20} />
+                                </div>
+                                <h6 className="fw-black text-dark mb-0 text-uppercase tracking-tighter">Paciente</h6>
+                            </div>
+                        </div>
+                        <div className="card-body px-4">
+                            <div className="mb-3">
+                                <label className="text-muted small fw-bold d-block text-uppercase">Nome Completo</label>
+                                <span className="fw-bold text-dark fs-5">{consulta.paciente?.nome}</span>
+                            </div>
+                            <div className="mb-4">
+                                <label className="text-muted small fw-bold d-block text-uppercase">Contato</label>
+                                <span className="text-dark small">{consulta.paciente?.email}</span>
+                            </div>
                             
-                            <div className="mb-4">
-                                <label className="text-muted small fw-bold text-uppercase">Nome Completo</label>
-                                <p className="fw-bold mb-0 fs-5">{paciente?.nome}</p>
-                            </div>
-
-                            <div className="row mb-4">
-                                <div className="col-6">
-                                    <label className="text-muted small fw-bold text-uppercase">CPF</label>
-                                    <p className="fw-medium mb-0">{paciente?.cpf}</p>
+                            <div className="p-3 bg-light rounded-4">
+                                <div className="d-flex align-items-center gap-2 mb-2 text-success">
+                                    <ClipboardList size={16} />
+                                    <span className="small fw-black text-uppercase">Queixa Principal</span>
                                 </div>
-                                <div className="col-6">
-                                    <label className="text-muted small fw-bold text-uppercase">Idade</label>
-                                    <p className="fw-medium mb-0">{paciente?.idade} anos</p>
-                                </div>
-                            </div>
-
-                            <hr />
-
-                            <div className="mb-4">
-                                <label className="text-muted small fw-bold text-uppercase d-block mb-1">Motivo da Consulta</label>
-                                <div className="bg-white p-3 rounded-3 border">
-                                    <p className="mb-0 small">{paciente?.motivo}</p>
-                                </div>
-                            </div>
-
-                            <div className="mb-0">
-                                <label className="text-muted small fw-bold text-uppercase d-block mb-1">Histórico/Alergias</label>
-                                <div className="bg-white p-3 rounded-3 border">
-                                    <p className="mb-0 small text-danger fw-medium">{paciente?.historico}</p>
-                                </div>
+                                <p className="small text-muted mb-0 italic">
+                                    {consulta.motivo || 'Nenhum motivo informado pelo paciente.'}
+                                </p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* COLUNA DIREITA: Prontuário (Formulário) */}
-                <div className="col-lg-8">
-                    <form onSubmit={handleFinalizarAtendimento} className="card border-0 shadow-sm rounded-4">
-                        <div className="card-body p-4">
-                            <h5 className="fw-bold text-success mb-4 d-flex align-items-center gap-2">
-                                ✍️ Evolução Médica
-                            </h5>
-
+                {/* Principal: Prontuário */}
+                <div className="col-12 col-xl-8">
+                    <form onSubmit={handleSubmit} className="card border-0 shadow-sm rounded-4 overflow-hidden">
+                        <div className="card-body p-3 p-md-4">
                             <div className="mb-4">
-                                <label className="form-label fw-bold small text-uppercase">Diagnóstico / CID</label>
-                                <input 
-                                    type="text" 
-                                    className="form-control border-2 shadow-none" 
-                                    placeholder="Ex: Cefaleia Tensional - G44.2"
-                                    value={diagnostico}
-                                    onChange={(e) => setDiagnostico(e.target.value)}
-                                    required
-                                />
-                            </div>
-
-                            <div className="mb-4">
-                                <label className="form-label fw-bold small text-uppercase">Evolução Clínica e Notas</label>
+                                <div className="d-flex align-items-center gap-2 mb-3">
+                                    <div className="p-2 bg-primary-subtle rounded-3 text-primary">
+                                        <FileText size={20} />
+                                    </div>
+                                    <h6 className="fw-black text-dark mb-0 text-uppercase tracking-tighter">Evolução Clínica</h6>
+                                </div>
                                 <textarea 
-                                    className="form-control border-2 shadow-none" 
-                                    rows="6"
-                                    placeholder="Descreva o quadro clínico, exames físicos e observações..."
+                                    className="form-control border-0 bg-light p-3 rounded-4" 
+                                    rows="8" 
+                                    placeholder="Descreva detalhadamente o quadro do paciente..."
                                     value={evolucao}
                                     onChange={(e) => setEvolucao(e.target.value)}
                                     required
+                                    style={{ resize: 'none' }}
                                 ></textarea>
                             </div>
 
                             <div className="mb-4">
-                                <label className="form-label fw-bold small text-uppercase">Prescrição / Conduta</label>
+                                <div className="d-flex align-items-center gap-2 mb-3">
+                                    <div className="p-2 bg-warning-subtle rounded-3 text-warning">
+                                        <Save size={20} />
+                                    </div>
+                                    <h6 className="fw-black text-dark mb-0 text-uppercase tracking-tighter">Prescrição e Recomendações</h6>
+                                </div>
                                 <textarea 
-                                    className="form-control border-2 shadow-none bg-light-success" 
-                                    rows="4"
-                                    style={{ backgroundColor: '#f0fff4' }}
-                                    placeholder="Medicamentos, dosagens e orientações ao paciente..."
+                                    className="form-control border-0 p-3 rounded-4" 
+                                    rows="5"
+                                    style={{ backgroundColor: '#fafffa', border: '1px dashed #d1e7dd !important', resize: 'none' }}
+                                    placeholder="Medicamentos, dosagem e orientações de repouso..."
                                     value={prescricao}
                                     onChange={(e) => setPrescricao(e.target.value)}
                                     required
                                 ></textarea>
                             </div>
 
-                            <div className="d-grid pt-2">
-                                <button type="submit" className="btn btn-success btn-lg fw-black text-uppercase py-3 rounded-4 shadow">
-                                    💾 Finalizar e Assinar Atendimento
-                                </button>
-                            </div>
+                            <button type="submit" className="btn btn-success w-100 py-3 fw-black rounded-4 shadow-sm d-flex align-items-center justify-content-center gap-2 mt-2">
+                                <Save size={20} /> FINALIZAR E SALVAR ATENDIMENTO
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -165,8 +168,16 @@ function MedicoAtendimento() {
 
             <style>{`
                 .fw-black { font-weight: 900; }
-                .bg-light-success { background-color: #f8fff9; }
-                .form-control:focus { border-color: #198754; box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.1); }
+                .tracking-tighter { letter-spacing: -0.5px; }
+                .bg-success-subtle { background-color: #e8f5e9; }
+                .bg-primary-subtle { background-color: #e3f2fd; }
+                .bg-warning-subtle { background-color: #fff8e1; }
+                .form-control:focus {
+                    background-color: #fff;
+                    box-shadow: 0 0 0 4px rgba(25, 135, 84, 0.1);
+                    border: 1px solid #198754 !important;
+                }
+                .italic { font-style: italic; }
             `}</style>
         </div>
     );

@@ -1,14 +1,14 @@
-// src/pages/Medico/MedicoDashboard.jsx
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useLoading } from '../../contexts/LoadingContext';
-// import { fetchAgendaDoDia, fetchDashboardStats } from '../../api/medicoService'; // <-- Você precisará criar este serviço depois
+import { buscarAgendaDoDia, buscarEstatisticasMedico } from '../../api/consultasService';
+import { Calendar, CheckCircle, XCircle, PlayCircle, ArrowRight, Clock, User } from 'lucide-react';
 
 function MedicoDashboard() {
     const { user } = useAuth();
     const { setIsLoading } = useLoading();
+    const navigate = useNavigate();
     const [proximasConsultas, setProximasConsultas] = useState([]);
     const [stats, setStats] = useState({
         consultasHoje: 0,
@@ -16,153 +16,163 @@ function MedicoDashboard() {
         consultasCanceladas: 0,
     });
     const [loadingData, setLoadingData] = useState(true);
-    const [error, setError] = useState(null);
 
     useEffect(() => {
         const loadDashboardData = async () => {
             setIsLoading(true);
-            setLoadingData(true);
-            setError(null);
             try {
-                // *** DESCOMENTE QUANDO TIVER OS SERVIÇOS DO BACKEND ***
-                // const agenda = await fetchAgendaDoDia(user.id);
-                // setProximasConsultas(agenda.slice(0, 3)); // Mostra as 3 próximas
-
-                // const dashboardStats = await fetchDashboardStats(user.id);
-                // setStats(dashboardStats);
-
-                // --- DADOS MOCADOS PARA TESTE (REMOVER DEPOIS) ---
-                setProximasConsultas([
-                    { id: 1, pacienteNome: 'Maria Silva', horario: '09:00', status: 'Aguardando' },
-                    { id: 2, pacienteNome: 'João Oliveira', horario: '09:30', status: 'Aguardando' },
-                    { id: 3, pacienteNome: 'Ana Souza', horario: '10:00', status: 'Aguardando' },
+                // Chamada simultânea das APIs
+                const [agenda, dashboardStats] = await Promise.all([
+                    buscarAgendaDoDia(),
+                    buscarEstatisticasMedico()
                 ]);
-                setStats({
-                    consultasHoje: 5,
-                    pacientesAtendidos: 2,
-                    consultasCanceladas: 0,
-                });
-                // --------------------------------------------------
 
+                console.log("Dados recebidos da Agenda:", agenda); // Verifique o console do navegador (F12)
+
+                // 1. GARANTIR QUE TEMOS UM ARRAY
+                let listaValida = Array.isArray(agenda) ? agenda : [];
+
+                // 2. ORDENAR POR HORÁRIO (Mais cedo primeiro)
+                listaValida.sort((a, b) => {
+                    const horaA = a.dataHora || a.horario || "";
+                    const horaB = b.dataHora || b.horario || "";
+                    return horaA.toString().localeCompare(horaB.toString());
+                });
+
+                // 3. MOSTRAR AS 3 PRIMEIRAS (Sem filtros de status por enquanto para garantir que apareça)
+                setProximasConsultas(listaValida.slice(0, 3));
+                
+                if (dashboardStats) setStats(dashboardStats);
+                
             } catch (err) {
-                console.error("Erro ao carregar dados do dashboard médico:", err);
-                setError("Não foi possível carregar os dados. Tente novamente.");
+                console.error("Erro ao carregar dashboard:", err);
             } finally {
                 setLoadingData(false);
                 setIsLoading(false);
             }
         };
 
-        if (user && user.id) {
-            loadDashboardData();
-        }
+        if (user) loadDashboardData();
     }, [user, setIsLoading]);
 
-    if (loadingData) {
-        return (
-            <div className="d-flex justify-content-center align-items-center py-5">
-                <div className="spinner-border text-success" role="status">
-                    <span className="visually-hidden">Carregando...</span>
-                </div>
-            </div>
-        );
-    }
+    // Função auxiliar para extrair o nome do paciente de várias estruturas possíveis
+    const getNomePaciente = (c) => {
+        if (c.paciente?.nome) return c.paciente.nome;
+        if (c.pacienteNome) return c.pacienteNome;
+        if (c.nomePaciente) return c.nomePaciente;
+        if (c.usuario?.nome) return c.usuario.nome;
+        return "Paciente";
+    };
 
-    if (error) {
-        return (
-            <div className="alert alert-danger text-center animate__animated animate__shakeX">
-                {error}
-            </div>
-        );
-    }
+    if (loadingData) return null;
 
     return (
-        <div className="animate__animated animate__fadeInUp animate__faster">
-            <h1 className="h3 mb-4 fw-black text-dark tracking-tighter">
-                <span className="text-success">Painel</span> do Dia, Dr(a). {user?.nome?.split(' ')[0]}
-            </h1>
-            <p className="text-muted mb-4">Bem-vindo(a) ao seu resumo diário de atendimentos e compromissos.</p>
+        <div className="animate__animated animate__fadeIn container-fluid px-2 px-md-4 py-3">
+            <div className="mb-4 text-center text-md-start">
+                <h1 className="h3 mb-1 fw-black text-dark tracking-tighter">
+                    Olá, Dr(a). <span className="text-success">{user?.nome?.split(' ')[0]}</span>
+                </h1>
+                <p className="text-muted fw-medium small">Resumo da sua atividade de hoje.</p>
+            </div>
 
             {/* Cards de Estatísticas */}
-            <div className="row g-4 mb-5">
-                <div className="col-md-4">
-                    <div className="card shadow-sm border-0 rounded-4 animate__animated animate__fadeInLeft animate__delay-0-2s">
-                        <div className="card-body p-4">
-                            <h5 className="card-title text-success fw-bold mb-3 d-flex align-items-center gap-2">
-                                <span className="fs-4">🗓️</span> Consultas Hoje
-                            </h5>
-                            <p className="display-4 fw-black text-dark mb-0">{stats.consultasHoje}</p>
-                            <span className="text-muted small">Agendadas para você</span>
+            <div className="row g-3 mb-4">
+                {[
+                    { label: 'Hoje', val: stats.consultasHoje, color: 'success', icon: <Calendar size={20}/> },
+                    { label: 'Atendidos', val: stats.pacientesAtendidos, color: 'primary', icon: <CheckCircle size={20}/> },
+                    { label: 'Cancelados', val: stats.consultasCanceladas, color: 'danger', icon: <XCircle size={20}/> }
+                ].map((item, idx) => (
+                    <div key={idx} className="col-12 col-md-4 col-custom-1080">
+                        <div className={`card shadow-sm border-0 rounded-4 bg-white border-start border-${item.color} border-5`}>
+                            <div className="card-body p-4">
+                                <div className="d-flex justify-content-between align-items-center mb-1">
+                                    <span className="text-muted small fw-bold text-uppercase">{item.label}</span>
+                                    <div className={`p-2 bg-${item.color}-subtle text-${item.color} rounded-3`}>{item.icon}</div>
+                                </div>
+                                <h2 className="fw-black mb-0 text-dark">{item.val}</h2>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div className="col-md-4">
-                    <div className="card shadow-sm border-0 rounded-4 animate__animated animate__fadeInUp animate__delay-0-4s">
-                        <div className="card-body p-4">
-                            <h5 className="card-title text-primary fw-bold mb-3 d-flex align-items-center gap-2">
-                                <span className="fs-4">✅</span> Pacientes Atendidos
-                            </h5>
-                            <p className="display-4 fw-black text-dark mb-0">{stats.pacientesAtendidos}</p>
-                            <span className="text-muted small">Atendimentos concluídos hoje</span>
-                        </div>
-                    </div>
-                </div>
-                <div className="col-md-4">
-                    <div className="card shadow-sm border-0 rounded-4 animate__animated animate__fadeInRight animate__delay-0-6s">
-                        <div className="card-body p-4">
-                            <h5 className="card-title text-danger fw-bold mb-3 d-flex align-items-center gap-2">
-                                <span className="fs-4">🚫</span> Cancelamentos
-                            </h5>
-                            <p className="display-4 fw-black text-dark mb-0">{stats.consultasCanceladas}</p>
-                            <span className="text-muted small">Consultas canceladas</span>
-                        </div>
-                    </div>
-                </div>
+                ))}
             </div>
 
             {/* Próximas Consultas */}
-            <div className="card shadow-lg border-0 rounded-4 animate__animated animate__fadeInUp animate__delay-1s">
-                <div className="card-header bg-success text-white py-3 border-0 rounded-top-4 d-flex justify-content-between align-items-center">
-                    <h5 className="mb-0 fw-bold d-flex align-items-center gap-2">
-                        <span className="fs-4">➡️</span> Próximos Atendimentos
-                    </h5>
-                    <Link to="/medico/agenda" className="btn btn-light btn-sm fw-bold rounded-pill px-3">
-                        Ver Agenda Completa
+            <div className="card shadow-sm border-0 rounded-4 overflow-hidden mb-5">
+                <div className="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center px-4">
+                    <h5 className="mb-0 fw-black text-dark">Próximo da Fila</h5>
+                    <Link to="/medico/agenda" className="btn btn-light btn-sm fw-bold rounded-pill px-3 border text-success">
+                        Ver Agenda <ArrowRight size={16} />
                     </Link>
                 </div>
                 <div className="card-body p-0">
                     {proximasConsultas.length > 0 ? (
-                        <ul className="list-group list-group-flush">
+                        <div className="list-group list-group-flush">
                             {proximasConsultas.map((consulta) => (
-                                <li key={consulta.id} className="list-group-item d-flex justify-content-between align-items-center p-4">
-                                    <div>
-                                        <p className="mb-1 fw-bold text-dark fs-5">{consulta.pacienteNome}</p>
-                                        <span className="badge bg-secondary-subtle text-secondary fw-bold" style={{ fontSize: '0.75rem' }}>
-                                            {consulta.horario} - {consulta.status}
-                                        </span>
+                                <div key={consulta.id} className="list-group-item p-4 hover-bg-light transition-all">
+                                    <div className="row align-items-center g-3">
+                                        <div className="col-12 col-md-5 col-custom-1080">
+                                            <div className="d-flex align-items-center gap-3">
+                                                <div className="bg-success-subtle text-success p-3 rounded-circle d-none d-md-flex">
+                                                    <User size={20} />
+                                                </div>
+                                                <div className="text-truncate">
+                                                    <p className="mb-0 fw-black text-dark fs-6">
+                                                        {getNomePaciente(consulta)}
+                                                    </p>
+                                                    <small className="text-muted d-flex align-items-center gap-1">
+                                                        <Clock size={12} /> 
+                                                        {consulta.horario || (consulta.dataHora ? new Date(consulta.dataHora).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--:--')}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="col-6 col-md-3 col-custom-1080">
+                                            <span className="badge bg-warning-subtle text-warning rounded-pill px-3 py-2 fw-bold text-uppercase" style={{fontSize: '10px'}}>
+                                                ● {consulta.status || 'AGENDADO'}
+                                            </span>
+                                        </div>
+                                        <div className="col-12 col-md-4 col-custom-1080 text-end">
+                                            <button 
+                                                onClick={() => navigate(`/medico/atendimento/${consulta.id}`)}
+                                                className="btn btn-success fw-black rounded-pill py-2 px-4 shadow-sm d-flex align-items-center justify-content-center gap-2 w-100-mobile hover-scale"
+                                            >
+                                                <PlayCircle size={18} fill="currentColor" /> INICIAR ATENDIMENTO
+                                            </button>
+                                        </div>
                                     </div>
-                                    <Link to={`/medico/atendimento/${consulta.id}`} className="btn btn-success fw-bold rounded-pill px-4 py-2 shadow-sm">
-                                        Iniciar Atendimento
-                                    </Link>
-                                </li>
+                                </div>
                             ))}
-                        </ul>
+                        </div>
                     ) : (
-                        <div className="p-4 text-center text-muted">
-                            <p className="mb-0">Nenhuma consulta agendada para as próximas horas.</p>
-                            <Link to="/medico/agenda" className="btn btn-outline-success mt-3 rounded-pill fw-bold">
-                                Ver toda a agenda
-                            </Link>
+                        <div className="p-5 text-center bg-light">
+                            <CheckCircle size={48} className="text-success opacity-25 mb-3" />
+                            <h6 className="fw-bold text-muted">Nenhuma consulta encontrada para hoje.</h6>
+                            <p className="text-muted small">Verifique se existem consultas marcadas na sua agenda.</p>
                         </div>
                     )}
                 </div>
             </div>
-            <style jsx>{`
+
+            <style>{`
                 .fw-black { font-weight: 900; }
                 .tracking-tighter { letter-spacing: -1px; }
-                .shadow-xs { box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.075)!important; }
-                .card-header.bg-success {
-                    background: linear-gradient(45deg, #198754, #146c43) !important;
+                .bg-success-subtle { background-color: #e8f5e9 !important; }
+                .bg-primary-subtle { background-color: #e3f2fd !important; }
+                .bg-danger-subtle { background-color: #ffebee !important; }
+                .bg-warning-subtle { background-color: #fff8e1 !important; }
+                .hover-bg-light:hover { background-color: #f8fff9; }
+                .transition-all { transition: all 0.2s ease-in-out; }
+                .hover-scale:hover { transform: scale(1.02); }
+
+                @media (max-width: 1080px) {
+                    .col-custom-1080 {
+                        width: 100% !important;
+                        flex: 0 0 100% !important;
+                        max-width: 100% !important;
+                    }
+                    .w-100-mobile { width: 100% !important; }
+                    .text-end { text-align: left !important; }
+                    .card-body { padding: 1.25rem !important; }
                 }
             `}</style>
         </div>

@@ -1,9 +1,8 @@
-// src/pages/Medico/MedicoPerfil.jsx
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLoading } from '../../contexts/LoadingContext'; 
 import { atualizarPerfilMedico } from '../../api/medicoService'; 
+import { User, Mail, Shield, Award, Eye, EyeOff, Check } from 'lucide-react';
 import Swal from 'sweetalert2'; 
 
 const ESPECIALIDADES = [
@@ -12,10 +11,9 @@ const ESPECIALIDADES = [
 ];
 
 function MedicoPerfil() {
-    // 1. Pegamos o contexto. Se setUser vier indefinido, evitamos o crash.
     const auth = useAuth();
     const user = auth?.user;
-    const setUser = auth?.setUser; // Verifique se no seu AuthContext o nome é esse mesmo
+    const setUser = auth?.setUser; 
     
     const { setIsLoading } = useLoading();
     
@@ -46,21 +44,17 @@ function MedicoPerfil() {
         if (!user?.id) return;
 
         const result = await Swal.fire({
-            title: 'Confirmar alterações?',
-            text: "Sua especialidade e credenciais de acesso serão atualizadas.",
+            title: 'Confirmar?',
+            text: "Deseja atualizar seus dados profissionais?",
             icon: 'question',
             showCancelButton: true,
-            confirmButtonColor: '#198754',
-            confirmButtonText: 'Sim, salvar!',
-            cancelButtonText: 'Cancelar',
-            reverseButtons: true
+            confirmButtonColor: '#10b981',
+            confirmButtonText: 'Sim, salvar'
         });
 
         if (result.isConfirmed) {
             setIsLoading(true);
             try {
-                // 2. IMPORTANTE: O MedicoCadastroDTO espera "nome" e "email" 
-                // para atualizar o usuário vinculado também.
                 const dadosParaEnviar = {
                     nome: user.nome,
                     email: user.email,
@@ -68,31 +62,21 @@ function MedicoPerfil() {
                     especialidade: formData.especialidade
                 };
 
-                if (formData.senha && formData.senha.trim() !== "") {
+                if (formData.senha?.trim()) {
                     dadosParaEnviar.senha = formData.senha;
                 }
 
                 const dataAtualizada = await atualizarPerfilMedico(user.id, dadosParaEnviar);
                 
-                // 3. PROTEÇÃO: Só chama setUser se ele existir
                 if (typeof setUser === 'function') {
                     setUser({ ...user, ...dataAtualizada });
-                } else {
-                    console.error("A função setUser não foi encontrada no AuthContext. Verifique o nome exportado.");
                 }
 
                 setIsEditing(false);
                 setFormData(prev => ({ ...prev, senha: '' }));
-                
-                Swal.fire({
-                    title: 'Sucesso!',
-                    text: 'Perfil atualizado com êxito.',
-                    icon: 'success',
-                    timer: 2000,
-                    showConfirmButton: false
-                });
+                Swal.fire('Sucesso!', 'Perfil atualizado.', 'success');
             } catch (error) {
-                Swal.fire('Erro!', error.message || 'Não foi possível salvar.', 'error');
+                Swal.fire('Erro!', error.message || 'Erro ao salvar.', 'error');
             } finally {
                 setIsLoading(false);
             }
@@ -100,56 +84,73 @@ function MedicoPerfil() {
     };
 
     return (
-        <div className="animate__animated animate__fadeIn">
-            {/* O RESTANTE DO SEU HTML ESTÁ PERFEITO, PODE MANTER IGUAL */}
+        <div className="container-fluid py-3 px-2 px-md-4 animate__animated animate__fadeIn">
             <div className="row justify-content-center">
-                <div className="col-lg-10 col-xl-8">
-                    <div className="text-center mb-5">
+                <div className="col-12 col-lg-10 col-xl-8">
+                    
+                    {/* Header: Avatar e Nome */}
+                    <div className="text-center mb-4">
                         <div className="position-relative d-inline-block">
-                            <div className="bg-success text-white rounded-circle d-flex align-items-center justify-content-center fw-black shadow-lg mx-auto" 
-                                 style={{ width: '120px', height: '120px', fontSize: '3rem' }}>
+                            <div className="bg-success text-white rounded-circle d-flex align-items-center justify-content-center fw-black shadow-lg mx-auto profile-avatar">
                                 {user?.nome?.charAt(0).toUpperCase() || '?'}
                             </div>
+                            <div className="position-absolute bottom-0 end-0 bg-white p-2 rounded-circle shadow-sm border text-success d-flex align-items-center justify-content-center" style={{width: '35px', height: '35px'}}>
+                                <Check size={20} strokeWidth={3} />
+                            </div>
                         </div>
-                        <h2 className="fw-black text-dark tracking-tighter mt-3 mb-1">
+                        <h2 className="fw-black text-dark tracking-tighter mt-3 mb-1 fs-3">
                             Dr(a). {user?.nome || 'Médico'}
                         </h2>
-                        <p className="text-success fw-bold text-uppercase small tracking-widest">
-                            {formData.especialidade || 'Clínica Geral'} • CRM {user?.crm}
-                        </p>
+                        <span className="badge bg-success-subtle text-success text-uppercase px-3 py-2 rounded-pill small fw-bold">
+                            CRM {user?.crm}
+                        </span>
                     </div>
 
-                    <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
-                        <div className="card-header bg-white border-bottom p-4 d-flex justify-content-between align-items-center">
-                            <h5 className="mb-0 fw-bold text-dark">Configurações da Conta</h5>
+                    {/* Card de Configurações */}
+                    <div className="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
+                        <div className="card-header bg-white border-bottom p-3 p-md-4 d-flex justify-content-between align-items-center">
+                            <div className="d-flex align-items-center gap-2">
+                                <Shield className="text-success" size={20} />
+                                <h5 className="mb-0 fw-black text-dark small text-uppercase">Dados da Conta</h5>
+                            </div>
                             <button 
                                 type="button"
                                 onClick={() => setIsEditing(!isEditing)} 
-                                className={`btn btn-sm rounded-pill px-4 fw-bold ${isEditing ? 'btn-light border' : 'btn-outline-success'}`}
+                                className={`btn btn-sm rounded-pill px-3 fw-bold transition-all ${isEditing ? 'btn-light border' : 'btn-success'}`}
                             >
-                                {isEditing ? 'Cancelar' : 'Editar Dados'}
+                                {isEditing ? 'Cancelar' : 'Editar Perfil'}
                             </button>
                         </div>
                         
-                        <div className="card-body p-4 p-md-5">
+                        <div className="card-body p-3 p-md-4">
                             <form onSubmit={handleSave}>
-                                <div className="row g-4">
-                                    <div className="col-md-6">
-                                        <label className="form-label text-muted small fw-bold text-uppercase">Nome Completo</label>
-                                        <input type="text" className="form-control bg-light border-0 fw-medium text-secondary" value={user?.nome || ''} readOnly />
+                                <div className="row g-3 g-md-4">
+                                    
+                                    {/* Nome (Read Only) */}
+                                    <div className="col-12 col-md-6">
+                                        <label className="form-label text-muted small fw-bold text-uppercase d-flex align-items-center gap-2">
+                                            <User size={14} /> Nome Completo
+                                        </label>
+                                        <input type="text" className="form-control-plaintext bg-light px-3 rounded-3 fw-medium text-dark border-0 py-2" value={user?.nome || ''} readOnly />
                                     </div>
 
-                                    <div className="col-md-6">
-                                        <label className="form-label text-muted small fw-bold text-uppercase">CRM / Registro</label>
-                                        <input type="text" className="form-control bg-light border-0 fw-medium text-secondary" value={user?.crm || ''} readOnly />
+                                    {/* E-mail (Read Only) */}
+                                    <div className="col-12 col-md-6">
+                                        <label className="form-label text-muted small fw-bold text-uppercase d-flex align-items-center gap-2">
+                                            <Mail size={14} /> E-mail
+                                        </label>
+                                        <input type="text" className="form-control-plaintext bg-light px-3 rounded-3 fw-medium text-dark border-0 py-2" value={user?.email || ''} readOnly />
                                     </div>
 
-                                    <div className="col-md-6">
-                                        <label className="form-label text-muted small fw-bold text-uppercase">Especialidade Atual</label>
+                                    {/* Especialidade (Editável) */}
+                                    <div className="col-12">
+                                        <label className="form-label text-muted small fw-bold text-uppercase d-flex align-items-center gap-2">
+                                            <Award size={14} /> Especialidade Clínica
+                                        </label>
                                         {isEditing ? (
                                             <select 
                                                 name="especialidade"
-                                                className="form-select border-2 border-success"
+                                                className="form-select border-2 border-success rounded-3 py-2"
                                                 value={formData.especialidade}
                                                 onChange={handleChange}
                                                 required
@@ -160,23 +161,21 @@ function MedicoPerfil() {
                                                 ))}
                                             </select>
                                         ) : (
-                                            <input type="text" className="form-control bg-light border-0 fw-medium text-secondary" value={formData.especialidade} readOnly />
+                                            <div className="bg-light px-3 py-2 rounded-3 text-dark fw-bold">{formData.especialidade}</div>
                                         )}
                                     </div>
 
-                                    <div className="col-md-6">
-                                        <label className="form-label text-muted small fw-bold text-uppercase">E-mail Profissional</label>
-                                        <input type="email" className="form-control bg-light border-0 fw-medium text-secondary" value={user?.email || ''} readOnly />
-                                    </div>
-
-                                    <div className="col-md-12">
-                                        <label className="form-label text-muted small fw-bold text-uppercase">Alterar Senha de Acesso</label>
+                                    {/* Senha */}
+                                    <div className="col-12">
+                                        <label className="form-label text-muted small fw-bold text-uppercase d-flex align-items-center gap-2">
+                                            <Shield size={14} /> Senha de Acesso
+                                        </label>
                                         <div className="position-relative">
                                             <input 
                                                 name="senha"
                                                 type={showPassword ? "text" : "password"} 
-                                                className={`form-control border-2 ${!isEditing ? 'bg-light border-0 text-muted' : 'bg-white border-success'}`} 
-                                                placeholder={isEditing ? "Deixe em branco para manter a atual" : "••••••••"}
+                                                className={`form-control border-2 rounded-3 py-2 ${!isEditing ? 'bg-light border-0' : 'bg-white border-success'}`} 
+                                                placeholder={isEditing ? "Nova senha ou deixe em branco" : "••••••••"}
                                                 value={formData.senha}
                                                 onChange={handleChange}
                                                 readOnly={!isEditing}
@@ -184,10 +183,10 @@ function MedicoPerfil() {
                                             {isEditing && (
                                                 <button 
                                                     type="button"
-                                                    className="btn position-absolute end-0 top-0 border-0 text-success fw-bold"
+                                                    className="btn position-absolute end-0 top-50 translate-middle-y border-0 text-success"
                                                     onClick={() => setShowPassword(!showPassword)}
                                                 >
-                                                    {showPassword ? "🙈" : "👁️"}
+                                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                                                 </button>
                                             )}
                                         </div>
@@ -195,8 +194,8 @@ function MedicoPerfil() {
                                 </div>
 
                                 {isEditing && (
-                                    <div className="mt-5 d-grid animate__animated animate__fadeInUp">
-                                        <button type="submit" className="btn btn-success btn-lg fw-black text-uppercase py-3 rounded-4 shadow">
+                                    <div className="mt-4 animate__animated animate__fadeInUp">
+                                        <button type="submit" className="btn btn-success w-100 py-3 fw-black text-uppercase rounded-4 shadow">
                                             Salvar Alterações
                                         </button>
                                     </div>
@@ -210,6 +209,26 @@ function MedicoPerfil() {
             <style>{`
                 .fw-black { font-weight: 900; }
                 .tracking-tighter { letter-spacing: -1px; }
+                .profile-avatar {
+                    width: 100px;
+                    height: 100px;
+                    font-size: 2.5rem;
+                }
+                .bg-success-subtle { background-color: #e8f5e9; }
+                .transition-all { transition: all 0.3s ease; }
+                
+                @media (min-width: 768px) {
+                    .profile-avatar {
+                        width: 120px;
+                        height: 120px;
+                        font-size: 3rem;
+                    }
+                }
+
+                .form-control:focus, .form-select:focus {
+                    box-shadow: 0 0 0 4px rgba(25, 135, 84, 0.1);
+                    border-color: #198754;
+                }
             `}</style>
         </div>
     );

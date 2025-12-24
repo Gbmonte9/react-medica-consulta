@@ -38,6 +38,8 @@ import MedicoAgenda from './pages/Medico/MedicoAgenda';
 import MedicoPacientes from './pages/Medico/MedicoPacientes';
 import MedicoPerfil from './pages/Medico/MedicoPerfil';
 import MedicoAtendimento from './pages/Medico/MedicoAtendimento';
+// IMPORTAÇÃO DA NOVA PÁGINA DE PRONTUÁRIO
+import ProntuarioPaciente from './pages/Medico/ProntuarioPaciente'; 
 
 function App() {
     return (
@@ -97,14 +99,14 @@ function App() {
                                     <Route index element={<MedicoDashboard />} /> 
                                     <Route path="agenda" element={<MedicoAgenda />} />
                                     
-                                    {/* CORREÇÃO AQUI: 
-                                        1. Criamos a rota base 'atendimento' que redireciona para a agenda (resolve o 404 do menu lateral)
-                                        2. Mantemos a rota dinâmica 'atendimento/:id' para o atendimento real
-                                    */}
                                     <Route path="atendimento" element={<Navigate to="/medico/agenda" replace />} />
                                     <Route path="atendimento/:id" element={<MedicoAtendimento />} /> 
 
                                     <Route path="pacientes" element={<MedicoPacientes />} />
+                                    
+                                    {/* NOVA ROTA: Visualização do Prontuário pelo Médico */}
+                                    <Route path="pacientes/:id/prontuario" element={<ProntuarioPaciente />} />
+
                                     <Route path="perfil" element={<MedicoPerfil />} />
                                 </Route>
                                 
