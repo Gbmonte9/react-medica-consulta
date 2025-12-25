@@ -41,14 +41,28 @@ export const extractErrorMessage = async (response) => {
  */
 export const buscarAgendaDoDia = async () => {
     const userId = getUserId();
-    const response = await fetch(`${CONSULTAS_API_BASE_URL}/medico/${userId}/hoje`, {
-        method: 'GET',
-        headers: getAuthHeaders(null)
-    });
-    if (response.status === 404) return [];
-    const errorMessage = await extractErrorMessage(response);
-    if (errorMessage) throw new Error(errorMessage);
-    return await response.json();
+    if (!userId) {
+        console.error("ID do médico não encontrado no storage");
+        return [];
+    }
+
+    try {
+        const response = await fetch(`${CONSULTAS_API_BASE_URL}/medico/${userId}/hoje`, {
+            method: 'GET',
+            headers: getAuthHeaders(null)
+        });
+
+        if (response.status === 404) return [];
+        
+        const errorMessage = await extractErrorMessage(response);
+        if (errorMessage) throw new Error(errorMessage);
+
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
+    } catch (error) {
+        console.error("Erro ao buscar agenda:", error);
+        return [];
+    }
 };
 
 /**
@@ -56,12 +70,20 @@ export const buscarAgendaDoDia = async () => {
  */
 export const buscarEstatisticasMedico = async () => {
     const userId = getUserId();
-    const response = await fetch(`${CONSULTAS_API_BASE_URL}/medico/${userId}/estatisticas`, {
-        method: 'GET',
-        headers: getAuthHeaders(null)
-    });
-    if (!response.ok) return { consultasHoje: 0, pacientesAtendidos: 0, consultasCanceladas: 0 };
-    return await response.json();
+    if (!userId) return { consultasHoje: 0, pacientesAtendidos: 0, consultasCanceladas: 0 };
+
+    try {
+        const response = await fetch(`${CONSULTAS_API_BASE_URL}/medico/${userId}/estatisticas`, {
+            method: 'GET',
+            headers: getAuthHeaders(null)
+        });
+
+        if (!response.ok) return { consultasHoje: 0, pacientesAtendidos: 0, consultasCanceladas: 0 };
+        
+        return await response.json();
+    } catch (error) {
+        return { consultasHoje: 0, pacientesAtendidos: 0, consultasCanceladas: 0 };
+    }
 };
 
 /**
@@ -86,9 +108,7 @@ export const listarMinhasConsultas = async () => {
     const userId = getUserId();
     const role = getRole()?.toUpperCase(); 
     
-    if (!userId) {
-        throw new Error("Usuário não identificado. Por favor, faça login novamente.");
-    }
+    if (!userId) throw new Error("Usuário não identificado.");
 
     const endpoint = role === 'MEDICO' ? 'medico' : 'paciente';
 
@@ -100,7 +120,8 @@ export const listarMinhasConsultas = async () => {
     const errorMessage = await extractErrorMessage(response);
     if (errorMessage) throw new Error(errorMessage);
 
-    return await response.json();
+    const data = await response.json();
+    return Array.isArray(data) ? data : [];
 };
 
 /**

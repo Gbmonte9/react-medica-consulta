@@ -4,7 +4,8 @@ function CardEstatistica({ titulo, valor, icone, color }) {
   return (
     <div className="card border-0 shadow-sm rounded-4 transition-card h-100 position-relative overflow-hidden">
       
-      <div className={`position-absolute top-0 start-0 w-100 sync-line ${color || 'bg-primary'}`} style={{ height: '3px', opacity: '0.7' }}></div>
+      {/* Linha de brilho superior animada */}
+      <div className={`position-absolute top-0 start-0 w-100 sync-line ${color || 'bg-primary'}`} style={{ height: '4px', opacity: '0.8' }}></div>
       
       <div className="card-body p-4 d-flex align-items-center justify-content-between">
         <div>
@@ -28,25 +29,30 @@ function CardEstatistica({ titulo, valor, icone, color }) {
         .fw-black { font-weight: 900 !important; }
         .tracking-widest { letter-spacing: 0.1em; }
         .rounded-4 { border-radius: 1rem !important; }
-        .transition-card { transition: all 0.3s ease; border: 1px solid rgba(0,0,0,0.02) !important; }
-        .transition-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.08) !important; }
+        
+        .transition-card { 
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            border: 1px solid rgba(0,0,0,0.02) !important; 
+        }
+        
+        .transition-card:hover { 
+            transform: translateY(-8px); 
+            box-shadow: 0 15px 30px rgba(0,0,0,0.12) !important; 
+        }
 
-        /* Linha de sincronia que brilha suavemente */
         .sync-line {
             animation: sync-glow 3s infinite ease-in-out;
         }
 
         @keyframes sync-glow {
-            0% { opacity: 0.3; }
-            50% { opacity: 1; }
-            100% { opacity: 0.3; }
+            0%, 100% { opacity: 0.4; filter: brightness(1); }
+            50% { opacity: 1; filter: brightness(1.3); }
         }
 
-        /* Pequeno ponto de pulso ao lado do título */
         .sync-dot {
-            width: 4px;
-            height: 4px;
-            background-color: #20c997; /* Verde sucesso */
+            width: 6px;
+            height: 6px;
+            background-color: #20c997;
             border-radius: 50%;
             display: inline-block;
             animation: dot-pulse 2s infinite;
@@ -54,23 +60,17 @@ function CardEstatistica({ titulo, valor, icone, color }) {
 
         @keyframes dot-pulse {
             0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(32, 201, 151, 0.7); }
-            70% { transform: scale(1.2); box-shadow: 0 0 0 4px rgba(32, 201, 151, 0); }
+            70% { transform: scale(1.3); box-shadow: 0 0 0 6px rgba(32, 201, 151, 0); }
             100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(32, 201, 151, 0); }
         }
 
-        /* Pulso sutil no ícone */
         .icon-pulse {
-            animation: icon-float 4s infinite ease-in-out;
+            animation: icon-float 3s infinite ease-in-out;
         }
 
         @keyframes icon-float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-3px); }
-        }
-
-        /* Animação suave para quando o valor mudar */
-        .value-animate {
-            transition: all 0.5s ease;
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-5px) rotate(5deg); }
         }
       `}</style>
     </div>
