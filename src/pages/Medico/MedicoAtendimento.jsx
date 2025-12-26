@@ -69,7 +69,7 @@ function MedicoAtendimento() {
 
     return (
         <div className="container-fluid py-3 px-2 px-md-4 animate__animated animate__fadeIn">
-            {/* Header Responsivo */}
+            
             <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
                 <div>
                     <button 
@@ -80,11 +80,11 @@ function MedicoAtendimento() {
                     </button>
                     <h2 className="fw-black text-dark mb-0">Atendimento <span className="text-success">Ativo</span></h2>
                 </div>
-                <div className="d-md-none border-top pt-3"></div> {/* Divisor mobile */}
+                <div className="d-md-none border-top pt-3"></div> 
             </div>
 
             <div className="row g-4">
-                {/* Lateral: Info do Paciente */}
+
                 <div className="col-12 col-xl-4">
                     <div className="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
                         <div className="card-header bg-white border-0 pt-4 px-4">
@@ -118,7 +118,6 @@ function MedicoAtendimento() {
                     </div>
                 </div>
 
-                {/* Principal: Prontuário */}
                 <div className="col-12 col-xl-8">
                     <form onSubmit={handleSubmit} className="card border-0 shadow-sm rounded-4 overflow-hidden">
                         <div className="card-body p-3 p-md-4">

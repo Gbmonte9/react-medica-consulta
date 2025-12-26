@@ -69,7 +69,6 @@ function PacienteConsulta() {
                 <p className="text-muted small fw-bold uppercase tracking-widest">Histórico e Agendamentos</p>
             </div>
 
-            {/* FILTROS ESTILIZADOS */}
             <div className="row g-3 mb-4">
                 <div className="col-12 col-md-4">
                     <div className="search-box bg-white shadow-sm rounded-4 p-2 d-flex align-items-center border">
@@ -87,7 +86,6 @@ function PacienteConsulta() {
                 </div>
             </div>
 
-            {/* LISTA EM CARDS (MOBILE) E TABELA (DESKTOP) */}
             <div className="consultas-container">
                 {consultasFiltradas.length > 0 ? (
                     <div className="row g-3">
@@ -95,7 +93,7 @@ function PacienteConsulta() {
                             <div key={c.id} className="col-12 col-xl-6">
                                 <div className={`card border-0 shadow-sm rounded-4 transition-all hvr-light overflow-hidden ${c.status === 'CANCELADA' ? 'opacity-75' : ''}`}>
                                     <div className="d-flex flex-column flex-md-row">
-                                        {/* Faixa Lateral de Data */}
+                                        
                                         <div className="bg-info-subtle p-3 d-flex flex-md-column justify-content-center align-items-center text-info gap-2" style={{ minWidth: '100px' }}>
                                             <span className="fw-black fs-4">{new Date(c.dataHora).getDate()}</span>
                                             <span className="fw-bold uppercase small">{new Date(c.dataHora).toLocaleString('pt-BR', { month: 'short' }).replace('.', '')}</span>
@@ -104,7 +102,6 @@ function PacienteConsulta() {
                                             </span>
                                         </div>
 
-                                        {/* Conteúdo */}
                                         <div className="card-body p-4 position-relative">
                                             <div className="mb-2">
                                                 <span className={`badge border-0 rounded-pill fw-black uppercase mb-2 ${

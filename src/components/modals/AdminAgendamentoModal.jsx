@@ -36,7 +36,7 @@ function AdminAgendamentoModal({ isOpen, consulta, onClose, onAgendamentoSuccess
                 setSelectedPacienteId(consulta.paciente?.id || '');
                 setSelectedMedicoId(consulta.medico?.id || '');
                 setSelectedStatus(consulta.status || 'AGENDADA');
-                setMotivo(consulta.motivo || ''); // CARREGA MOTIVO EXISTENTE
+                setMotivo(consulta.motivo || ''); 
                 setObservacoes(consulta.historico?.observacoes || '');
                 setReceita(consulta.historico?.receita || '');
                 if (consulta.dataHora) setDataHora(consulta.dataHora.substring(0, 16));
@@ -58,7 +58,7 @@ function AdminAgendamentoModal({ isOpen, consulta, onClose, onAgendamentoSuccess
             medicoId: selectedMedicoId, 
             dataHora: dataHora.includes(':00') ? dataHora : `${dataHora}:00`,
             status: selectedStatus, 
-            motivo: motivo, // ENVIANDO MOTIVO PARA O BACKEND
+            motivo: motivo, 
             observacoes, 
             receita 
         };

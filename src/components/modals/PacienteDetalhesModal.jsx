@@ -24,7 +24,6 @@ function PacienteDetalhesModal({ isOpen, onClose, consulta }) {
         <div className="modal-backdrop-custom d-flex align-items-center justify-content-center p-3">
             <div className="modal-content-custom bg-white rounded-5 shadow-lg animate__animated animate__backInUp overflow-hidden" style={{ maxWidth: '500px', width: '100%' }}>
                 
-                {/* Header Estilizado */}
                 <div className="bg-info p-4 text-white text-center position-relative">
                     <button onClick={onClose} className="btn-close-white position-absolute end-0 top-0 m-3 border-0 bg-transparent text-white fs-4" style={{ cursor: 'pointer' }}>×</button>
                     <div className="avatar-medico mx-auto bg-white text-info rounded-circle d-flex align-items-center justify-content-center mb-2 shadow" style={{ width: '70px', height: '70px', fontSize: '1.5rem', fontWeight: '900' }}>
@@ -35,7 +34,6 @@ function PacienteDetalhesModal({ isOpen, onClose, consulta }) {
                 </div>
 
                 <div className="modal-body p-4">
-                    {/* Seção de Motivo */}
                     <div className="info-group mb-4">
                         <label className="label-custom">Sintomas Relatados</label>
                         <div className="content-box bg-light border-0 p-3 rounded-4 fw-medium text-dark">
@@ -43,7 +41,6 @@ function PacienteDetalhesModal({ isOpen, onClose, consulta }) {
                         </div>
                     </div>
 
-                    {/* Seção de Diagnóstico */}
                     <div className="info-group mb-4">
                         <label className="label-custom text-info">Parecer Médico</label>
                         <div className="content-box p-3 border-start border-info border-4 bg-light rounded-2 small" style={{ minHeight: '80px' }}>
@@ -51,7 +48,6 @@ function PacienteDetalhesModal({ isOpen, onClose, consulta }) {
                         </div>
                     </div>
 
-                    {/* Seção de Prescrição */}
                     {historico?.receita && (
                         <div className="info-group">
                             <label className="label-custom text-success">Prescrição Digital</label>

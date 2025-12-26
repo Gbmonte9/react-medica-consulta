@@ -24,7 +24,7 @@ function PacienteLayout() {
     };
 
     const getNomePaciente = () => {
-        if (user?.nome && user.nome !== 'sessao_ativa') return user.nome.split(' ')[0]; // Apenas primeiro nome no topo
+        if (user?.nome && user.nome !== 'sessao_ativa') return user.nome.split(' ')[0]; 
         return 'Paciente';
     };
 
@@ -33,7 +33,6 @@ function PacienteLayout() {
     return (
         <div className="d-flex vh-100 overflow-hidden bg-light">
             
-            {/* OVERLAY Mobile - Escurece o fundo quando o menu abre */}
             {isSidebarOpen && (
                 <div 
                     className="position-fixed w-100 h-100 bg-dark opacity-50 d-md-none animate__animated animate__fadeIn"
@@ -42,7 +41,6 @@ function PacienteLayout() {
                 ></div>
             )}
 
-            {/* SIDEBAR */}
             <aside 
                 className={`bg-white border-end shadow-sm d-flex flex-column h-100 transition-all`}
                 style={{ 
@@ -96,10 +94,8 @@ function PacienteLayout() {
                 </div>
             </aside>
 
-            {/* CONTEÚDO PRINCIPAL */}
             <main className="flex-grow-1 d-flex flex-column overflow-auto">
                 <header className="bg-white border-bottom p-3 d-flex align-items-center justify-content-between px-4 shadow-sm sticky-top">
-                    {/* Botão Hambúrguer Visível apenas no Mobile */}
                     <button className="btn btn-light border d-md-none" onClick={() => setIsSidebarOpen(true)}>
                         <span className="fs-5">☰</span>
                     </button>
@@ -119,7 +115,6 @@ function PacienteLayout() {
                 </header>
 
                 <div className="p-3 p-md-4 flex-grow-1">
-                    {/* O container interno agora é opcional, deixei o fundo branco arredondado para as páginas */}
                     <div className="container-fluid bg-white shadow-sm rounded-4 p-4 p-md-5 border animate__animated animate__fadeInUp animate__faster">
                         <Outlet />
                     </div>

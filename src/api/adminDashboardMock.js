@@ -1,34 +1,24 @@
-// src/api/dashboardApi.js
+import api from './api';
 
-const API_BASE_URL = 'http://localhost:8080/api'; 
-
-/**
- * Agrega os dados de múltiplos endpoints da API para criar as estatísticas do Dashboard.
- * @returns {Promise<Response>} Um objeto que imita a resposta de uma chamada fetch.
- */
 export const fetchDashboardData = async () => {
-    console.log("API REAL: Buscando e agregando dados do Dashboard...");
+    console.log("API REAL: Buscando e agregando dados do Dashboard via Axios...");
     
     try {
         const [medicosRes, pacientesRes, consultasRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/medicos`),
-          fetch(`${API_BASE_URL}/pacientes`),
-          fetch(`${API_BASE_URL}/consultas`),
+          api.get('/medicos'),
+          api.get('/pacientes'),
+          api.get('/consultas'),
         ]);
 
-        if (!medicosRes.ok || !pacientesRes.ok || !consultasRes.ok) {
-          throw new Error("Falha ao buscar um ou mais conjuntos de dados da API. Verifique se o servidor Java está rodando.");
-        }
-
-        const medicos = await medicosRes.json();
-        const pacientes = await pacientesRes.json();
-        const consultas = await consultasRes.json();
+        const medicos = medicosRes.data;
+        const pacientes = pacientesRes.data;
+        const consultas = consultasRes.data;
         
-        const totalMedicos = medicos.length;
-        const totalPacientes = pacientes.length;
+        const totalMedicos = Array.isArray(medicos) ? medicos.length : 0;
+        const totalPacientes = Array.isArray(pacientes) ? pacientes.length : 0;
 
-        const hoje = new Date().toISOString().split('T')[0]; // Ex: 2025-12-13
-        const mesAtual = new Date().toISOString().substring(0, 7); // Ex: 2025-12
+        const hoje = new Date().toISOString().split('T')[0]; 
+        const mesAtual = new Date().toISOString().substring(0, 7); 
         
         const consultasHoje = consultas.filter(c => 
             c.dataConsulta && c.dataConsulta.startsWith(hoje)
@@ -44,7 +34,10 @@ export const fetchDashboardData = async () => {
             return acc;
         }, {});
         
-        const dadosParaGrafico = Object.entries(distribuicao).map(([name, consultas]) => ({ name, consultas }));
+        const dadosParaGrafico = Object.entries(distribuicao).map(([name, consultas]) => ({ 
+            name, 
+            consultas 
+        }));
 
         const finalData = {
             totalMedicos,
@@ -54,18 +47,10 @@ export const fetchDashboardData = async () => {
             distribuicaoConsultas: dadosParaGrafico,
         };
         
-        return {
-            ok: true,
-            status: 200,
-            json: () => Promise.resolve(finalData)
-        };
+        return finalData;
 
     } catch (error) {
-        console.error("Erro na busca da API real:", error);
-        return {
-            ok: false,
-            status: 500,
-            json: () => Promise.reject({ message: error.message })
-        };
+        console.error("Erro na busca agregada do Dashboard:", error);
+        throw new Error(error.response?.data?.message || "Falha ao carregar dados do Dashboard. Verifique a conexão.");
     }
 };

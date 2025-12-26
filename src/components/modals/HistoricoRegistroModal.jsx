@@ -8,7 +8,6 @@ function HistoricoRegistroModal({ isOpen, onClose, consulta, onHistoricoSuccess 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // --- MAPEAMENTO SEGURO DE DADOS ---
     const nomePaciente = 
         consulta?.paciente?.nome || 
         consulta?.paciente?.nomeUsuario || 
@@ -37,7 +36,6 @@ function HistoricoRegistroModal({ isOpen, onClose, consulta, onHistoricoSuccess 
                         resetForm(); 
                     }
                 } catch (err) { 
-                    // Se não encontrar histórico, apenas reseta para criação
                     resetForm(); 
                 } finally { 
                     setLoading(false); 
@@ -100,7 +98,6 @@ function HistoricoRegistroModal({ isOpen, onClose, consulta, onHistoricoSuccess 
                     </div>
                     
                     <div className="modal-body p-0">
-                        {/* Box de Informação do Atendimento */}
                         <div className="bg-light p-4 border-bottom">
                             <div className="row g-3">
                                 <div className="col-md-4">
@@ -116,7 +113,6 @@ function HistoricoRegistroModal({ isOpen, onClose, consulta, onHistoricoSuccess 
                                     <div className="font-monospace small text-secondary">#{consultaId?.toString().substring(0,8)}...</div>
                                 </div>
                                 
-                                {/* EXIBIÇÃO DO MOTIVO DA CONSULTA - CONTEXTO PARA O MÉDICO */}
                                 <div className="col-12 mt-3">
                                     <div className="bg-white p-2 px-3 rounded-3 border-start border-4 border-warning shadow-sm">
                                         <span className="text-muted fw-bold uppercase" style={{fontSize: '9px'}}>Motivo do Agendamento (Queixa Principal)</span>

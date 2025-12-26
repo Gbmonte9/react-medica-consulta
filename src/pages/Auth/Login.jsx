@@ -1,9 +1,8 @@
-// src/pages/Auth/Login.jsx
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLoading } from '../../contexts/LoadingContext'; 
 import { useNavigate, Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 function Login() {
     const [email, setEmail] = useState('');
@@ -15,24 +14,29 @@ function Login() {
     const { setIsLoading } = useLoading();
     const navigate = useNavigate();
 
-    // Efeito de Redirecionamento - Atualizado para incluir o Médico
     useEffect(() => {
         if (isLoggedIn && role) {
-            const roleUpper = role.toUpperCase();
-            let targetPath = '/';
-
-            if (roleUpper.includes('ADMIN')) {
-                targetPath = '/admin';
-            } else if (roleUpper.includes('PACIENTE')) {
-                targetPath = '/paciente';
-            } else if (roleUpper.includes('MEDICO')) {
-                targetPath = '/medico'; // <-- Adicionado redirecionamento do médico
-            }
-
-            setIsLoading(false);
-            navigate(targetPath, { replace: true });
+            redirecionarPorRole(role);
         }
-    }, [isLoggedIn, role, navigate, setIsLoading]);
+    }, [isLoggedIn, role]);
+
+    const redirecionarPorRole = (userRole) => {
+        if (!userRole) return;
+        
+        const roleUpper = userRole.toUpperCase();
+        let targetPath = '/login';
+
+        if (roleUpper.includes('ADMIN')) {
+            targetPath = '/admin';
+        } else if (roleUpper.includes('PACIENTE')) {
+            targetPath = '/paciente';
+        } else if (roleUpper.includes('MEDICO')) {
+            targetPath = '/medico';
+        }
+
+        setIsLoading(false);
+        navigate(targetPath, { replace: true });
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -41,9 +45,20 @@ function Login() {
         setIsLoading(true); 
 
         try {
-            await login(email, senha);
+
+            const result = await login(email, senha);
+            
+            if (result) {
+                const nomeExibicao = result.nome || (result.user && result.user.nome) || 'Usuário';
+                
+                toast.success(`Bem-vindo, ${nomeExibicao}!`);
+                
+                redirecionarPorRole(result.role);
+            }
         } catch (err) {
-            setError(err.message || 'Credenciais inválidas.');
+            const msgErro = err.message || 'Credenciais inválidas.';
+            setError(msgErro);
+            toast.error(msgErro);
             setIsSubmitting(false); 
             setIsLoading(false); 
         }
@@ -58,7 +73,6 @@ function Login() {
             <div className="card border-0 shadow-lg overflow-hidden animate__animated animate__zoomIn" 
                  style={{ maxWidth: '420px', width: '100%', borderRadius: '28px' }}>
                 
-                {/* Header do Login - Agora mais neutro e moderno */}
                 <div className="bg-white p-5 text-center border-bottom">
                     <div className="d-flex align-items-center justify-content-center gap-2 mb-3">
                         <div className="bg-dark rounded-4 d-flex align-items-center justify-content-center shadow-sm" 
@@ -85,17 +99,16 @@ function Login() {
                     <form onSubmit={handleSubmit}>
                         <div className="mb-4">
                             <label className="form-label text-secondary fw-bold uppercase mb-1" style={{ fontSize: '11px' }}>E-mail profissional ou pessoal</label>
-                            <div className="input-group">
-                                <input
-                                    type="email"
-                                    className="form-control form-control-lg border-2 bg-light shadow-none fw-medium"
-                                    style={{ borderRadius: '14px', fontSize: '15px' }}
-                                    placeholder="exemplo@email.com"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                />
-                            </div>
+                            <input
+                                type="email"
+                                className="form-control form-control-lg border-2 bg-light shadow-none fw-medium"
+                                style={{ borderRadius: '14px', fontSize: '15px' }}
+                                placeholder="exemplo@email.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                disabled={isSubmitting}
+                            />
                         </div>
 
                         <div className="mb-4">
@@ -108,6 +121,7 @@ function Login() {
                                 value={senha}
                                 onChange={(e) => setSenha(e.target.value)}
                                 required
+                                disabled={isSubmitting}
                             />
                         </div>
 
@@ -122,9 +136,7 @@ function Login() {
                     </form>
                     
                     <div className="text-center pt-2">
-                        <p className="small fw-bold text-muted mb-2">
-                            Ainda não tem cadastro?
-                        </p>
+                        <p className="small fw-bold text-muted mb-2">Ainda não tem cadastro?</p>
                         <Link to="/register" className="btn btn-outline-dark btn-sm rounded-pill px-4 fw-black uppercase" style={{ fontSize: '10px' }}>
                             Criar Conta de Paciente
                         </Link>
@@ -142,7 +154,7 @@ function Login() {
                 .fw-black { font-weight: 900; }
                 .tracking-tighter { letter-spacing: -1px; }
                 .btn-primary { background: linear-gradient(45deg, #0d6efd, #0056b3); }
-                .btn-primary:hover { transform: translateY(-3px); shadow: 0 8px 15px rgba(13,110,253,0.3); }
+                .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(13,110,253,0.3); }
                 .form-control:focus { background-color: #fff !important; border-color: #0d6efd; }
             `}</style>
         </div>

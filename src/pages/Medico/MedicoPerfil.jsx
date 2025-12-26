@@ -88,7 +88,6 @@ function MedicoPerfil() {
             <div className="row justify-content-center">
                 <div className="col-12 col-lg-10 col-xl-8">
                     
-                    {/* Header: Avatar e Nome */}
                     <div className="text-center mb-4">
                         <div className="position-relative d-inline-block">
                             <div className="bg-success text-white rounded-circle d-flex align-items-center justify-content-center fw-black shadow-lg mx-auto profile-avatar">
@@ -106,7 +105,6 @@ function MedicoPerfil() {
                         </span>
                     </div>
 
-                    {/* Card de Configurações */}
                     <div className="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
                         <div className="card-header bg-white border-bottom p-3 p-md-4 d-flex justify-content-between align-items-center">
                             <div className="d-flex align-items-center gap-2">
@@ -126,7 +124,6 @@ function MedicoPerfil() {
                             <form onSubmit={handleSave}>
                                 <div className="row g-3 g-md-4">
                                     
-                                    {/* Nome (Read Only) */}
                                     <div className="col-12 col-md-6">
                                         <label className="form-label text-muted small fw-bold text-uppercase d-flex align-items-center gap-2">
                                             <User size={14} /> Nome Completo
@@ -134,7 +131,6 @@ function MedicoPerfil() {
                                         <input type="text" className="form-control-plaintext bg-light px-3 rounded-3 fw-medium text-dark border-0 py-2" value={user?.nome || ''} readOnly />
                                     </div>
 
-                                    {/* E-mail (Read Only) */}
                                     <div className="col-12 col-md-6">
                                         <label className="form-label text-muted small fw-bold text-uppercase d-flex align-items-center gap-2">
                                             <Mail size={14} /> E-mail
@@ -142,7 +138,6 @@ function MedicoPerfil() {
                                         <input type="text" className="form-control-plaintext bg-light px-3 rounded-3 fw-medium text-dark border-0 py-2" value={user?.email || ''} readOnly />
                                     </div>
 
-                                    {/* Especialidade (Editável) */}
                                     <div className="col-12">
                                         <label className="form-label text-muted small fw-bold text-uppercase d-flex align-items-center gap-2">
                                             <Award size={14} /> Especialidade Clínica
@@ -165,7 +160,6 @@ function MedicoPerfil() {
                                         )}
                                     </div>
 
-                                    {/* Senha */}
                                     <div className="col-12">
                                         <label className="form-label text-muted small fw-bold text-uppercase d-flex align-items-center gap-2">
                                             <Shield size={14} /> Senha de Acesso

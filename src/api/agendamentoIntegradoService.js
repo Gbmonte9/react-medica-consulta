@@ -1,40 +1,30 @@
-// src/api/agendamentoIntegradoService.js
+import api from './api';
 
-import { getToken } from './authService'; 
-
-import { extractErrorMessage } from './consultasService'; 
-
-const CONSULTAS_API_BASE_URL = 'http://localhost:8080/api/consultas';
-
-const getAuthHeaders = () => {
-    const token = getToken();
-    return {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`, 
-    };
+const handleApiError = (error) => {
+    if (error.response) {
+        const data = error.response.data;
+        if (data.errors && Array.isArray(data.errors)) {
+            throw new Error(data.errors.map(err => err.defaultMessage || err.message).join('; '));
+        }
+        throw new Error(data.message || data.error || `Erro ${error.response.status}`);
+    }
+    throw new Error("Falha na comunicação com o servidor ao integrar agendamento.");
 };
 
 /**
  * Envia dados para o endpoint de orquestração que agenda a consulta (finalizada) 
  * e registra o histórico simultaneamente.
- * * @param {object} dataIntegrada - Deve conter pacienteId, medicoId, dataHora, observacoes, e receita.
+ * * @param {object} dataIntegrada - Deve conter pacienteId, medicoId, dataHora, observacoes e receita.
  */
 export const agendarEFinalizarConsulta = async (dataIntegrada) => { 
+    console.log("Iniciando Agendamento Integrado via Axios...");
+    
     try {
-        const response = await fetch(`${CONSULTAS_API_BASE_URL}/agendar-e-finalizar`, {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify(dataIntegrada),
-        });
-
-        const errorMessage = await extractErrorMessage(response);
-        if (errorMessage) {
-            throw new Error(errorMessage);
-        }
-
-        return await response.json(); 
+        const response = await api.post('/consultas/agendar-e-finalizar', dataIntegrada);
+        
+        return response.data; 
     } catch (error) {
         console.error('Erro ao agendar e finalizar consulta:', error);
-        throw error;
+        handleApiError(error);
     }
 };

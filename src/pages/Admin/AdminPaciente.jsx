@@ -9,6 +9,19 @@ function AdminPaciente() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [pacienteEditando, setPacienteEditando] = useState(null); 
 
+    const formatarCPF = (cpf) => {
+        if (!cpf) return "---";
+        const c = cpf.replace(/\D/g, "");
+        return c.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+    };
+
+    const formatarTelefone = (tel) => {
+        if (!tel) return "Não informado";
+        const t = tel.replace(/\D/g, "");
+        if (t.length === 11) return t.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
+        return t.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
+    };
+
     const fetchPacientes = async () => {
         try {
             setLoading(true);
@@ -30,9 +43,9 @@ function AdminPaciente() {
             id: paciente.id,
             nome: paciente.nomeUsuario, 
             email: paciente.emailUsuario,
-            telefone: paciente.telefone,
-            cpf: "", 
-            senha: "" 
+            telefone: paciente.telefone || '',
+            cpf: paciente.cpf || '', 
+            senha: '' 
         };
         setPacienteEditando(dadosParaModal);
         setIsModalOpen(true);
@@ -40,10 +53,15 @@ function AdminPaciente() {
 
     const handleSalvar = async (pacienteData) => {
         try {
-            const payload = { ...pacienteData, tipo: 'PACIENTE' };
+            const payload = { 
+                ...pacienteData, 
+                tipo: 'PACIENTE',
+                cpf: pacienteData.cpf.replace(/\D/g, ''),
+                telefone: pacienteData.telefone.replace(/\D/g, '')
+            };
+
             if (pacienteEditando?.id) {
                 if (!payload.senha?.trim()) delete payload.senha;
-                if (!payload.cpf?.trim()) delete payload.cpf;
                 await atualizarPaciente(pacienteEditando.id, payload);
             } else {
                 await criarPaciente(payload);
@@ -90,7 +108,7 @@ function AdminPaciente() {
                         <thead className="bg-light">
                             <tr>
                                 <th className="px-4 py-3 border-0 fw-black text-muted small uppercase">Nome</th>
-                                <th className="px-4 py-3 border-0 fw-black text-muted small uppercase">Email</th>
+                                <th className="px-4 py-3 border-0 fw-black text-muted small uppercase">CPF</th>
                                 <th className="px-4 py-3 border-0 fw-black text-muted small uppercase">Telefone</th>
                                 <th className="px-4 py-3 border-0 fw-black text-muted small uppercase text-center">Ações</th>
                             </tr>
@@ -101,9 +119,7 @@ function AdminPaciente() {
                                     <td colSpan="4" className="text-center py-5">
                                         <div className="d-flex flex-column align-items-center opacity-50">
                                             <span style={{ fontSize: '40px' }}>📁</span>
-                                            <p className="fw-bold text-muted uppercase small mt-2">
-                                                Nenhum paciente cadastrado no sistema.
-                                            </p>
+                                            <p className="fw-bold text-muted uppercase small mt-2">Nenhum paciente cadastrado.</p>
                                         </div>
                                     </td>
                                 </tr>
@@ -111,15 +127,13 @@ function AdminPaciente() {
                                 pacientes.map((paciente) => (
                                     <tr key={paciente.id}>
                                         <td className="px-4 py-3">
-                                            <div className="d-flex align-items-center">
-                                                <div className="bg-light rounded-circle d-flex align-items-center justify-content-center me-3" style={{width: '35px', height: '35px'}}>🧍</div>
-                                                <span className="fw-bold text-dark">{paciente.nomeUsuario}</span>
-                                            </div>
+                                            <span className="fw-bold text-dark">{paciente.nomeUsuario}</span><br/>
+                                            <small className="text-muted">{paciente.emailUsuario}</small>
                                         </td>
-                                        <td className="px-4 py-3 text-muted">{paciente.emailUsuario}</td>
+                                        <td className="px-4 py-3 font-monospace">{formatarCPF(paciente.cpf)}</td>
                                         <td className="px-4 py-3">
                                             <span className="badge bg-light text-dark border fw-medium px-2 py-1">
-                                                {paciente.telefone || "Não informado"}
+                                                {formatarTelefone(paciente.telefone)}
                                             </span>
                                         </td>
                                         <td className="px-4 py-3 text-center">

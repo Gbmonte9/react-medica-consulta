@@ -37,7 +37,6 @@ function MedicoPacientes() {
     return (
         <div className="container-fluid py-3 px-2 px-md-4 animate__animated animate__fadeIn">
             
-            {/* Cabeçalho e Busca Responsiva */}
             <div className="row align-items-end mb-4 g-3">
                 <div className="col-12 col-lg-7">
                     <h2 className="fw-black text-dark tracking-tighter mb-1">Meus <span className="text-success">Pacientes</span></h2>
@@ -59,7 +58,6 @@ function MedicoPacientes() {
                 </div>
             </div>
 
-            {/* Grid de Pacientes - Ajustado para forçar 1 coluna abaixo de 1080px */}
             <div className="row g-3 g-md-4">
                 {pacientesFiltrados.length > 0 ? (
                     pacientesFiltrados.map((paciente) => (
@@ -67,7 +65,6 @@ function MedicoPacientes() {
                             <div className="card border-0 shadow-sm rounded-4 hover-shadow transition-all h-100">
                                 <div className="card-body p-4 d-flex flex-column">
                                     
-                                    {/* Perfil Rápido */}
                                     <div className="d-flex align-items-center gap-3 mb-4">
                                         <div className="bg-success-subtle text-success rounded-4 d-flex align-items-center justify-content-center fw-black shadow-sm" 
                                              style={{ width: '56px', height: '56px', fontSize: '1.4rem' }}>
@@ -82,7 +79,6 @@ function MedicoPacientes() {
                                         </div>
                                     </div>
 
-                                    {/* Detalhes de Contato */}
                                     <div className="bg-light rounded-4 p-3 mb-4 flex-grow-1">
                                         <div className="mb-3 d-flex align-items-start gap-2">
                                             <Mail size={16} className="text-success mt-1 flex-shrink-0" />
@@ -104,7 +100,6 @@ function MedicoPacientes() {
                                         </div>
                                     </div>
 
-                                    {/* Ação */}
                                     <div className="d-grid mt-auto">
                                         <button 
                                             onClick={() => navigate(`/medico/pacientes/${paciente.id}/prontuario`)}

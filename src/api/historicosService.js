@@ -1,129 +1,82 @@
-// src/api/historicosService.js
+import api from './api';
 
-import { getToken } from './authService';
-
-// Verifique se no seu Controller Java está @RequestMapping("/api/historicos") com 's'
-const HISTORICO_API_BASE_URL = 'http://localhost:8080/api/historicos';
-
-const getAuthHeaders = (contentType = 'application/json') => {
-    const token = getToken();
-    const headers = {
-        'Authorization': `Bearer ${token}`
-    };
-    if (contentType) {
-        headers['Content-Type'] = contentType;
+const handleApiError = (error) => {
+    if (error.response) {
+        const data = error.response.data;
+        if (data.errors && Array.isArray(data.errors)) {
+            throw new Error(data.errors.map(err => err.defaultMessage || err.message).join('; '));
+        }
+        throw new Error(data.message || data.error || `Erro ${error.response.status}`);
     }
-    return headers;
+    throw new Error("Falha na comunicação com o servidor.");
 };
 
-const extractErrorMessage = async (response) => {
-    if (response.status === 204) return null;
-    const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
-        try {
-            const errorData = await response.json();
-            if (errorData.errors && Array.isArray(errorData.errors)) {
-                return errorData.errors.map(err => err.defaultMessage || err.message).join('; ');
-            }
-            return errorData.message || errorData.error || `Erro ${response.status}`;
-        } catch (e) { }
-    }
-    return `Erro na requisição: ${response.status}`;
-};
-
-/**
- * NOVO: Busca todos os registros de histórico de um paciente específico
- * Usado na tela de Prontuário Digital
- */
 export const buscarHistoricosPorPacienteId = async (pacienteId) => {
-    const response = await fetch(`${HISTORICO_API_BASE_URL}/paciente/${pacienteId}`, {
-        method: 'GET',
-        headers: getAuthHeaders(null),
-    });
-    
-    if (response.status === 404) return []; // Retorna lista vazia se não houver registros
-    
-    if (!response.ok) {
-        const error = await extractErrorMessage(response);
-        throw new Error(error);
+    try {
+        const response = await api.get(`/historicos/paciente/${pacienteId}`);
+        return Array.isArray(response.data) ? response.data : [];
+    } catch (error) {
+        if (error.response?.status === 404) return [];
+        handleApiError(error);
     }
-    return await response.json();
 };
 
 export const registrarHistorico = async (historicoData) => {
-    const response = await fetch(HISTORICO_API_BASE_URL, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(historicoData),
-    });
-    if (!response.ok) {
-        const error = await extractErrorMessage(response);
-        throw new Error(error);
+    try {
+        const response = await api.post('/historicos', historicoData);
+        return response.data;
+    } catch (error) {
+        handleApiError(error);
     }
-    return await response.json();
 };
 
 export const buscarHistoricoPorId = async (id) => {
-    const response = await fetch(`${HISTORICO_API_BASE_URL}/${id}`, {
-        method: 'GET',
-        headers: getAuthHeaders(null),
-    });
-    if (!response.ok) {
-        const error = await extractErrorMessage(response);
-        throw new Error(error);
+    try {
+        const response = await api.get(`/historicos/${id}`);
+        return response.data;
+    } catch (error) {
+        handleApiError(error);
     }
-    return await response.json();
 };
 
 export const buscarHistoricoPorConsultaId = async (consultaId) => {
-    const response = await fetch(`${HISTORICO_API_BASE_URL}/consulta/${consultaId}`, {
-        method: 'GET',
-        headers: getAuthHeaders(null),
-    });
-    if (response.status === 404) return null;
-    if (!response.ok) {
-        const error = await extractErrorMessage(response);
-        throw new Error(error);
+    try {
+        const response = await api.get(`/historicos/consulta/${consultaId}`);
+        return response.data;
+    } catch (error) {
+        if (error.response?.status === 404) return null;
+        handleApiError(error);
     }
-    return await response.json();
 };
 
 export const atualizarHistorico = async (id, historicoData) => {
-    const response = await fetch(`${HISTORICO_API_BASE_URL}/${id}`, {
-        method: 'PUT',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(historicoData),
-    });
-    if (!response.ok) {
-        const error = await extractErrorMessage(response);
-        throw new Error(error);
+    try {
+        const response = await api.put(`/historicos/${id}`, historicoData);
+        return response.data;
+    } catch (error) {
+        handleApiError(error);
     }
-    return await response.json();
 };
 
 export const removerHistorico = async (id) => {
-    const response = await fetch(`${HISTORICO_API_BASE_URL}/${id}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders(null),
-    });
-    if (!response.ok) {
-        const error = await extractErrorMessage(response);
-        throw new Error(error);
+    try {
+        await api.delete(`/historicos/${id}`);
+        return true;
+    } catch (error) {
+        handleApiError(error);
     }
-    return true;
 };
 
 export const gerarPdfHistoricoConsultas = async () => {
-    const response = await fetch(`${HISTORICO_API_BASE_URL}/pdf/consultas`, {
-        method: 'GET',
-        headers: {
-            ...getAuthHeaders(null),
-            'Accept': 'application/pdf'
-        },
-    });
-    if (!response.ok) {
-        const error = await extractErrorMessage(response);
-        throw new Error(error || 'Falha ao gerar PDF');
+    try {
+        const response = await api.get('/historicos/pdf/consultas', {
+            responseType: 'blob', 
+            headers: {
+                'Accept': 'application/pdf'
+            }
+        });
+        return response.data; 
+    } catch (error) {
+        handleApiError(error);
     }
-    return await response.blob(); 
 };

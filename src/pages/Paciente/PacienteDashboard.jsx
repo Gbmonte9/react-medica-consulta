@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLoading } from '../../contexts/LoadingContext';
@@ -19,50 +19,52 @@ function PatientDashboard() {
         return 'Paciente';
     };
 
-    useEffect(() => {
-        const carregarTudo = async () => {
-            setIsLoading(true);
-            try {
-                const dicasFixas = [
-                    "Beba água regularmente para manter seu corpo hidratado.",
-                    "Uma boa noite de sono é fundamental para a recuperação do organismo.",
-                    "Pequenas caminhadas diárias fazem uma grande diferença na saúde do coração.",
-                    "Mantenha uma alimentação equilibrada e rica em nutrientes.",
-                    "Prevenir é melhor que remediar: mantenha seus exames em dia."
-                ];
-                setDicaDoDia(dicasFixas[Math.floor(Math.random() * dicasFixas.length)]);
+    const carregarDadosDashboard = useCallback(async () => {
+        if (!user?.id) return; 
 
-                if (user?.id) {
-                    const consultas = await listarMinhasConsultas(user.id);
-                    if (Array.isArray(consultas)) {
-                        const agora = new Date();
-                        const futuras = consultas
-                            .filter(c => c.status === 'AGENDADA' && new Date(c.dataHora) > agora)
-                            .sort((a, b) => new Date(a.dataHora) - new Date(b.dataHora));
-                        
-                        const passadas = consultas
-                            .filter(c => c.status === 'REALIZADA' || c.status === 'FINALIZADA')
-                            .sort((a, b) => new Date(b.dataHora) - new Date(a.dataHora))
-                            .slice(0, 3);
+        setIsLoading(true);
+        try {
+            const dicasFixas = [
+                "Beba água regularmente para manter seu corpo hidratado.",
+                "Uma boa noite de sono é fundamental para a recuperação do organismo.",
+                "Pequenas caminhadas diárias fazem uma grande diferença na saúde do coração.",
+                "Mantenha uma alimentação equilibrada e rica em nutrientes.",
+                "Prevenir é melhor que remediar: mantenha seus exames em dia."
+            ];
+            setDicaDoDia(dicasFixas[Math.floor(Math.random() * dicasFixas.length)]);
 
-                        setProximaConsulta(futuras[0] || null);
-                        setUltimasConsultas(passadas);
-                        setTotalConsultas(consultas.length);
-                    }
-                }
-            } catch (error) {
-                console.error("Erro ao carregar dados:", error);
-            } finally {
-                setIsLoading(false);
+            const consultas = await listarMinhasConsultas();
+            
+            if (Array.isArray(consultas)) {
+                const agora = new Date();
+                
+                const futuras = consultas
+                    .filter(c => c.status === 'AGENDADA' && new Date(c.dataHora) > agora)
+                    .sort((a, b) => new Date(a.dataHora) - new Date(b.dataHora));
+
+                const passadas = consultas
+                    .filter(c => c.status === 'REALIZADA' || c.status === 'FINALIZADA')
+                    .sort((a, b) => new Date(b.dataHora) - new Date(a.dataHora))
+                    .slice(0, 3);
+
+                setProximaConsulta(futuras[0] || null);
+                setUltimasConsultas(passadas);
+                setTotalConsultas(consultas.length);
             }
-        };
-        carregarTudo();
+        } catch (error) {
+            console.error("Erro ao carregar dados do dashboard:", error);
+        } finally {
+            setIsLoading(false);
+        }
     }, [user?.id, setIsLoading]);
+
+    useEffect(() => {
+        carregarDadosDashboard();
+    }, [carregarDadosDashboard]);
 
     return (
         <div className="animate__animated animate__fadeIn pb-5 container-fluid px-3 px-md-4">
             
-            {/* CABEÇALHO COM ENTRADA SUAVE */}
             <div className="mb-4 mb-md-5 text-center text-md-start animate__animated animate__fadeInDown">
                 <h2 className="fw-black text-dark uppercase tracking-tighter mb-1 fs-2 fs-md-1">
                     Olá, <span className="text-info">{getNomeExibicao()}</span>! 👋
@@ -74,7 +76,7 @@ function PatientDashboard() {
             </div>
 
             <div className="row g-3 g-md-4">
-                {/* PRÓXIMO ATENDIMENTO - ENTRADA PELA ESQUERDA */}
+                
                 <div className="col-12 col-xl-8 animate__animated animate__fadeInLeft" style={{ animationDelay: '0.1s' }}>
                     <div className="card border-0 shadow-sm rounded-4 overflow-hidden h-100 bg-white border-top border-info border-5 card-hover-simple">
                         <div className="card-body p-4 p-md-5">
@@ -117,7 +119,6 @@ function PatientDashboard() {
                     </div>
                 </div>
 
-                {/* ATENDIMENTOS TOTAIS - ENTRADA PELA DIREITA */}
                 <div className="col-12 col-md-6 col-xl-4 animate__animated animate__fadeInRight" style={{ animationDelay: '0.2s' }}>
                     <div className="card border-0 bg-info-subtle rounded-4 shadow-sm h-100 p-4 d-flex flex-column justify-content-center align-items-center text-center card-hover-simple">
                         <div className="bg-white rounded-circle shadow-sm d-flex align-items-center justify-content-center mb-3 icon-pulse" style={{width: '55px', height: '55px'}}>
@@ -131,7 +132,6 @@ function PatientDashboard() {
                     </div>
                 </div>
 
-                {/* HISTÓRICO RECENTE - ENTRADA POR BAIXO */}
                 <div className="col-12 col-md-6 col-lg-6 animate__animated animate__fadeInUp" style={{ animationDelay: '0.3s' }}>
                     <div className="card border-0 shadow-sm rounded-4 p-4 h-100 card-hover-simple">
                         <h6 className="fw-black text-dark uppercase small mb-4">🕒 Histórico Recente</h6>
@@ -156,7 +156,6 @@ function PatientDashboard() {
                     </div>
                 </div>
 
-                {/* DICA DO DIA - ENTRADA POR BAIXO */}
                 <div className="col-12 col-md-12 col-lg-6 animate__animated animate__fadeInUp" style={{ animationDelay: '0.4s' }}>
                     <div className="card border-0 shadow-sm rounded-4 h-100 position-relative overflow-hidden card-hover-simple" style={{backgroundColor: '#e0f7fa'}}>
                         <div className="card-body p-4 p-md-5 d-flex flex-column justify-content-center min-h-150">
@@ -178,45 +177,36 @@ function PatientDashboard() {
                 .text-info { color: #0dcaf0 !important; }
                 .text-info-emphasis { color: #0891b2 !important; }
                 .btn-info { background-color: #0dcaf0 !important; border: none; transition: all 0.3s ease; }
-                .btn-info:hover { background-color: #0baccc !important; transform: translateY(-2px); shadow: 0 5px 15px rgba(13, 202, 240, 0.3); }
-                
+                .btn-info:hover { background-color: #0baccc !important; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(13, 202, 240, 0.3); }
                 .hvr-push { transition: transform 0.2s; }
                 .hvr-push:active { transform: scale(0.95); }
-                
                 .card-hover-simple { transition: all 0.3s ease; }
                 .card-hover-simple:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important; }
-
                 .list-item-hover { transition: padding 0.3s ease; }
                 .list-item-hover:hover { padding-left: 10px !important; background-color: #f8fdff !important; }
-
                 .max-w-150 { max-width: 150px; }
                 .min-h-150 { min-height: 150px; }
                 .italic-style { font-style: italic; line-height: 1.5; color: #0e7490; }
-
-                /* Animações de pulso e flutuação */
+                
                 .icon-pulse { animation: pulse-soft 2s infinite; }
                 @keyframes pulse-soft {
                     0% { box-shadow: 0 0 0 0 rgba(13, 202, 240, 0.4); }
                     70% { box-shadow: 0 0 0 10px rgba(13, 202, 240, 0); }
                     100% { box-shadow: 0 0 0 0 rgba(13, 202, 240, 0); }
                 }
-
                 .float-anim { animation: float 4s infinite ease-in-out; }
                 @keyframes float {
                     0%, 100% { transform: translateY(0) rotate(0deg); }
                     50% { transform: translateY(-15px) rotate(5deg); }
                 }
-
                 .pulse-badge { animation: pulse-white 3s infinite; }
                 @keyframes pulse-white {
                     0%, 100% { opacity: 1; }
                     50% { opacity: 0.8; }
                 }
-                
                 @media (max-width: 576px) {
                     .small-mobile { font-size: 0.85rem; }
                     .fs-2 { font-size: 1.5rem !important; }
-                    .btn-info { padding: 12px !important; }
                 }
             `}</style>
         </div>

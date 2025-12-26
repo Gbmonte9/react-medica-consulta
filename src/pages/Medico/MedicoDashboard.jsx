@@ -111,7 +111,7 @@ function MedicoDashboard() {
                     {proximasConsultas.length > 0 ? (
                         <div className="list-group list-group-flush">
                             {proximasConsultas.map((consulta, index) => {
-                                // Verifica se o status é Agendado para definir a cor
+                                
                                 const isAgendada = consulta.status?.toUpperCase().includes('AGENDA');
                                 
                                 return (

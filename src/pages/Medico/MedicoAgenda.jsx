@@ -59,7 +59,7 @@ function MedicoAgenda() {
 
     return (
         <div className="container-fluid py-3 px-2 px-md-4 animate__animated animate__fadeIn">
-            {/* Header Simplificado */}
+        
             <div className="d-flex justify-content-between align-items-end mb-4">
                 <div>
                     <h2 className="fw-black text-dark mb-0">Minha <span className="text-success">Agenda</span></h2>
@@ -70,7 +70,6 @@ function MedicoAgenda() {
                 </button>
             </div>
 
-            {/* Lista de Consultas */}
             <div className="row g-3">
                 {consultas.length > 0 ? (
                     consultas.map((item) => {
@@ -83,7 +82,6 @@ function MedicoAgenda() {
                                     <div className="card-body p-3">
                                         <div className="d-flex align-items-center justify-content-between">
                                             
-                                            {/* Bloco de Data (Estilo Calendário) */}
                                             <div className="d-flex align-items-center gap-3">
                                                 <div className="text-center bg-light rounded-3 p-2" style={{ minWidth: '60px' }}>
                                                     <div className="small text-uppercase fw-bold text-muted" style={{ fontSize: '10px' }}>
@@ -94,7 +92,6 @@ function MedicoAgenda() {
                                                     </div>
                                                 </div>
 
-                                                {/* Info do Paciente */}
                                                 <div>
                                                     <div className="fw-bold text-dark fs-6">{item.paciente?.nome}</div>
                                                     <div className="d-flex align-items-center gap-2">
@@ -109,7 +106,6 @@ function MedicoAgenda() {
                                                 </div>
                                             </div>
 
-                                            {/* Ações Diretas */}
                                             <div className="d-flex gap-2">
                                                 {item.status === 'AGENDADA' ? (
                                                     <>

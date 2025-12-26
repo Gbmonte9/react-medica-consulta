@@ -67,14 +67,14 @@ function PatientPerfil() {
 
     return (
         <div className="container-fluid animate__animated animate__fadeIn pb-5 px-3 px-md-4">
-            {/* CABEÇALHO RESPONSIVO */}
+          
             <div className="mb-4 mb-md-5 text-center text-md-start">
                 <h2 className="fw-black text-dark uppercase tracking-tighter mb-1 fs-2 fs-md-1">Meu Perfil</h2>
                 <p className="text-muted small fw-bold uppercase">Gerencie suas informações pessoais.</p>
             </div>
 
             <div className="row g-4">
-                {/* COLUNA DO FORMULÁRIO */}
+            
                 <div className="col-12 col-xl-8 order-2 order-xl-1">
                     <div className="card border-0 shadow-sm rounded-4 overflow-hidden bg-white border-top border-info border-5">
                         <div className="card-body p-4 p-md-5">
@@ -152,7 +152,6 @@ function PatientPerfil() {
                     </div>
                 </div>
 
-                {/* COLUNA DO STATUS DO PERFIL */}
                 <div className="col-12 col-xl-4 order-1 order-xl-2">
                     <div className="card border-0 shadow-sm rounded-4 p-4 text-center bg-white border-bottom border-info border-5">
                         <div className="py-2 py-md-4">

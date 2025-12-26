@@ -1,95 +1,99 @@
-// src/contexts/AuthContext.jsx
-
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useContext, useCallback, useMemo } from 'react';
 import * as authService from '../api/authService'; 
 
 const AuthContext = createContext();
 
 export const useAuth = () => {
-    return useContext(AuthContext);
+    const context = useContext(AuthContext);
+    if (!context) {
+        throw new Error("useAuth deve ser usado dentro de um AuthProvider");
+    }
+    return context;
 };
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [role, setRole] = useState(null); 
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
+    const getInitialState = () => {
         const token = authService.getToken();
         const storedRole = authService.getRole();
         const userId = authService.getUserId();
-        const userName = authService.getUserName();
         
-        // Recupera dados adicionais (Médico ou Paciente)
-        const userEmail = localStorage.getItem('userEmail');
-        const userTelefone = localStorage.getItem('userTelefone');
-        const userCpf = localStorage.getItem('userCpf');           
-        const userCrm = localStorage.getItem('userCrm');           
-        const userEspecialidade = localStorage.getItem('userEspecialidade'); 
-
         if (token && storedRole && userId) {
-            setUser({ 
-                id: userId, 
-                nome: userName,
-                email: userEmail,
-                telefone: userTelefone,
-                cpf: userCpf,             
-                crm: userCrm,             
-                especialidade: userEspecialidade 
-            }); 
-            // Normaliza para facilitar as verificações de rota
-            setRole(storedRole.toUpperCase());
+            return {
+                user: {
+                    id: userId,
+                    nome: authService.getUserName() || 'Usuário',
+                    email: localStorage.getItem('userEmail'),
+                    telefone: localStorage.getItem('userTelefone'),
+                    cpf: localStorage.getItem('userCpf'),
+                    crm: localStorage.getItem('userCrm'),
+                    especialidade: localStorage.getItem('userEspecialidade')
+                },
+                role: storedRole.toUpperCase()
+            };
         }
-        setIsLoading(false);
-    }, []);
+        return { user: null, role: null };
+    };
+
+    const [authState, setAuthState] = useState(getInitialState);
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleLogin = async (email, senha) => {
         setIsLoading(true);
         try {
+
             const responseData = await authService.login(email, senha); 
             
             const userRole = responseData.role.toUpperCase();
             
-            setRole(userRole);
-            setUser({ 
-                id: responseData.userId, 
-                nome: responseData.nome,
-                email: responseData.email,
-                telefone: responseData.telefone,
-                cpf: responseData.cpf,             
-                crm: responseData.crm,             
-                especialidade: responseData.especialidade 
-            });
+            const newState = {
+                role: userRole,
+                user: { 
+                    id: responseData.id, 
+                    nome: responseData.nome, 
+                    email: responseData.email,
+                    telefone: responseData.telefone,
+                    cpf: responseData.cpf,             
+                    crm: responseData.crm,             
+                    especialidade: responseData.especialidade 
+                }
+            };
 
-            return true; 
+            setAuthState(newState);
+            
+            return { 
+                nome: responseData.nome, 
+                role: userRole,
+                id: responseData.id 
+            }; 
         } catch (error) {
-            if (error.status === 401) handleLogout();
+            console.error("Erro no login (AuthContext):", error);
             throw error; 
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleLogout = () => {
+    const handleLogout = useCallback(() => {
         authService.logout();
-        setUser(null);
-        setRole(null);
-    };
+        setAuthState({ user: null, role: null });
+    }, []);
 
-    // O segredo está aqui: incluímos o setUser no value para os componentes usarem
-    const value = {
-        user,
-        setUser, // <--- Adicionado para permitir atualizações manuais do perfil
-        role,
-        isLoggedIn: !!user, 
+    const value = useMemo(() => ({
+        user: authState.user,
+        role: authState.role,
+        setUser: (newUser) => setAuthState(prev => ({ 
+            ...prev, 
+            user: { ...prev.user, ...newUser } 
+        })),
+        isLoggedIn: !!authState.user, 
         isLoading,
         login: handleLogin,
         logout: handleLogout,
-    };
+    }), [authState, isLoading, handleLogout]);
 
     return (
         <AuthContext.Provider value={value}>
-            {!isLoading && children}
+            {children}
         </AuthContext.Provider>
     );
 };

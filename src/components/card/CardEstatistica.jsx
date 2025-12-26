@@ -4,7 +4,6 @@ function CardEstatistica({ titulo, valor, icone, color }) {
   return (
     <div className="card border-0 shadow-sm rounded-4 transition-card h-100 position-relative overflow-hidden">
       
-      {/* Linha de brilho superior animada */}
       <div className={`position-absolute top-0 start-0 w-100 sync-line ${color || 'bg-primary'}`} style={{ height: '4px', opacity: '0.8' }}></div>
       
       <div className="card-body p-4 d-flex align-items-center justify-content-between">

@@ -2,8 +2,10 @@
 
 import "bootstrap/dist/css/bootstrap.min.css";
 import 'animate.css';
+import 'react-toastify/dist/ReactToastify.css'; 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
 
 import { AuthProvider } from './contexts/AuthContext';
 import { LoadingProvider } from './contexts/LoadingContext'; 
@@ -38,13 +40,12 @@ import MedicoAgenda from './pages/Medico/MedicoAgenda';
 import MedicoPacientes from './pages/Medico/MedicoPacientes';
 import MedicoPerfil from './pages/Medico/MedicoPerfil';
 import MedicoAtendimento from './pages/Medico/MedicoAtendimento';
-// IMPORTAÇÃO DA NOVA PÁGINA DE PRONTUÁRIO
 import ProntuarioPaciente from './pages/Medico/ProntuarioPaciente'; 
 
 function App() {
     return (
-        <AuthProvider>
-            <LoadingProvider> 
+        <LoadingProvider> {/* O Loading envolve tudo para cobrir a tela inteira */}
+            <AuthProvider>
                 <Router>
                     <ErrorBoundary>
                         <div className="App">
@@ -103,8 +104,6 @@ function App() {
                                     <Route path="atendimento/:id" element={<MedicoAtendimento />} /> 
 
                                     <Route path="pacientes" element={<MedicoPacientes />} />
-                                    
-                                    {/* NOVA ROTA: Visualização do Prontuário pelo Médico */}
                                     <Route path="pacientes/:id/prontuario" element={<ProntuarioPaciente />} />
 
                                     <Route path="perfil" element={<MedicoPerfil />} />
@@ -114,8 +113,8 @@ function App() {
                                 <Route path="*" element={
                                     <div className="vh-100 d-flex align-items-center justify-content-center bg-light text-center px-3">
                                         <div>
-                                            <h1 className="display-1 fw-black text-primary">404</h1>
-                                            <p className="fw-bold text-muted uppercase tracking-widest">Página não localizada</p>
+                                            <h1 className="display-1 fw-bold text-primary">404</h1>
+                                            <p className="fw-bold text-muted text-uppercase">Página não localizada</p>
                                             <button onClick={() => window.history.back()} className="btn btn-dark rounded-pill px-4 mt-3 shadow">
                                                 ⬅ Voltar
                                             </button>
@@ -125,9 +124,11 @@ function App() {
                             </Routes>
                         </div>
                     </ErrorBoundary>
+                    {/* Container de notificações posicionado globalmente */}
+                    <ToastContainer position="top-right" autoClose={4000} hideProgressBar={false} />
                 </Router>
-            </LoadingProvider>
-        </AuthProvider>
+            </AuthProvider>
+        </LoadingProvider>
     );
 }
 

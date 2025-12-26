@@ -54,7 +54,7 @@ function AdminConsultas() {
             lista = lista.filter(c => 
                 (c.paciente?.nome?.toLowerCase().includes(busca)) || 
                 (c.medico?.nome?.toLowerCase().includes(busca)) ||
-                (c.motivo?.toLowerCase().includes(busca)) // BUSCA TAMBÉM PELO MOTIVO
+                (c.motivo?.toLowerCase().includes(busca)) 
             );
         }
         lista.sort((a, b) => new Date(b.dataHora) - new Date(a.dataHora));
@@ -166,7 +166,7 @@ function AdminConsultas() {
                                                 Dr(a). {consulta.medico?.nome || 'Médico não identificado'}
                                             </div>
                                         </td>
-                                        {/* NOVA COLUNA DE MOTIVO */}
+                                       
                                         <td className="px-4 py-3">
                                             <div className="text-muted small text-truncate" style={{maxWidth: '150px', fontSize: '11px'}} title={consulta.motivo}>
                                                 {consulta.motivo || <em className="text-light-emphasis">Não informado</em>}

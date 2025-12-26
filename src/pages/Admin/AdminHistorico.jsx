@@ -27,7 +27,6 @@ function AdminHistorico() {
 
     useEffect(() => { fetchConsultas(); }, []);
 
-    // --- FUNÇÃO AUXILIAR PARA PADRONIZAR O NOME ---
     const extrairNome = (objeto) => {
         if (!objeto) return "N/A";
         return objeto.nome || objeto.nomeUsuario || (objeto.usuario ? objeto.usuario.nome : "N/A");

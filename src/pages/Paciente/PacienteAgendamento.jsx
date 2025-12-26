@@ -100,7 +100,7 @@ function PacienteAgendamento() {
 
     return (
         <div className="container-fluid animate__animated animate__fadeIn py-3 py-md-5 px-3">
-            {/* CABEÇALHO RESPONSIVO */}
+        
             <div className="mb-4 mb-md-5 text-center px-2">
                 <span className="badge bg-info-subtle text-info fw-black uppercase px-3 py-2 mb-2" style={{ fontSize: '10px' }}>
                     Novo Agendamento
@@ -116,13 +116,11 @@ function PacienteAgendamento() {
             <div className="row justify-content-center">
                 <div className="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5">
                     <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
-                        {/* Linha decorativa no topo para manter o estilo do Dashboard */}
                         <div className="bg-info" style={{ height: '6px' }}></div>
                         
                         <div className="card-body p-4 p-md-5">
                             <form onSubmit={handleSubmit}>
                                 
-                                {/* Médico */}
                                 <div className="mb-4">
                                     <label className="form-label fw-black uppercase small text-muted mb-2">Profissional</label>
                                     <select 
@@ -146,7 +144,6 @@ function PacienteAgendamento() {
                                     )}
                                 </div>
 
-                                {/* Data e Hora */}
                                 <div className="mb-4">
                                     <label className="form-label fw-black uppercase small text-muted mb-2">Data e Horário</label>
                                     <input 
@@ -159,7 +156,6 @@ function PacienteAgendamento() {
                                     />
                                 </div>
 
-                                {/* Motivo */}
                                 <div className="mb-4 mb-md-5">
                                     <label className="form-label fw-black uppercase small text-muted mb-2">Motivo da Consulta</label>
                                     <textarea 
@@ -173,7 +169,6 @@ function PacienteAgendamento() {
                                     ></textarea>
                                 </div>
 
-                                {/* Ações - Botões empilham em telas muito pequenas */}
                                 <div className="d-grid gap-3">
                                     <button type="submit" className="btn text-white fw-black uppercase py-3 shadow-sm border-0 hvr-grow"
                                             style={{ borderRadius: '14px', letterSpacing: '1px', backgroundColor: '#0dcaf0' }}>

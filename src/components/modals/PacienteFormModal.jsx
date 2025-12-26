@@ -3,14 +3,31 @@ import React, { useState, useEffect } from 'react';
 function PacienteFormModal({ isOpen, paciente, onClose, onSave }) {
     const [formData, setFormData] = useState({ nome: '', email: '', senha: '', cpf: '', telefone: '' });
 
+    const maskCPF = (value) => {
+        return value
+            .replace(/\D/g, "")
+            .replace(/(\d{3})(\d)/, "$1.$2")
+            .replace(/(\d{3})(\d)/, "$1.$2")
+            .replace(/(\d{3})(\d{1,2})$/, "$1-$2")
+            .substring(0, 14);
+    };
+
+    const maskPhone = (value) => {
+        return value
+            .replace(/\D/g, "")
+            .replace(/(\d{2})(\d)/, "($1) $2")
+            .replace(/(\d{5})(\d)/, "$1-$2")
+            .substring(0, 15);
+    };
+
     useEffect(() => {
         if (paciente) {
             setFormData({
-                nome: paciente.nomeUsuario || '', 
-                email: paciente.emailUsuario || '',
-                telefone: paciente.telefone || '',
-                senha: '', 
-                cpf: '' 
+                nome: paciente.nome || '', 
+                email: paciente.email || '',
+                telefone: maskPhone(paciente.telefone || ''),
+                cpf: maskCPF(paciente.cpf || ''),
+                senha: ''
             });
         } else {
             setFormData({ nome: '', email: '', senha: '', cpf: '', telefone: '' });
@@ -19,7 +36,12 @@ function PacienteFormModal({ isOpen, paciente, onClose, onSave }) {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        let maskedValue = value;
+
+        if (name === 'cpf') maskedValue = maskCPF(value);
+        if (name === 'telefone') maskedValue = maskPhone(value);
+
+        setFormData(prev => ({ ...prev, [name]: maskedValue }));
     };
 
     const handleSubmit = (e) => {
@@ -32,10 +54,8 @@ function PacienteFormModal({ isOpen, paciente, onClose, onSave }) {
     return (
         <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)' }}>
             <div className="modal-dialog modal-dialog-centered">
-                <div className="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-                    
-                    {/* Header do Modal */}
-                    <div className="modal-header bg-white border-bottom-0 pt-4 px-4">
+                <div className="modal-content border-0 shadow-lg rounded-4">
+                    <div className="modal-header border-bottom-0 pt-4 px-4">
                         <h5 className="modal-title fw-black text-uppercase tracking-tighter">
                             {paciente ? 'Editar' : 'Novo'} <span className="text-primary">Paciente</span>
                         </h5>
@@ -52,12 +72,12 @@ function PacienteFormModal({ isOpen, paciente, onClose, onSave }) {
 
                                 <div className="col-md-6">
                                     <label className="form-label fw-bold small text-uppercase text-muted">CPF</label>
-                                    <input type="text" name="cpf" value={formData.cpf} onChange={handleChange} className="form-control rounded-3 p-2 bg-light border-0 shadow-none" placeholder={paciente ? "Inalterado" : "000.000.000-00"} required={!paciente} />
+                                    <input type="text" name="cpf" value={formData.cpf} onChange={handleChange} className="form-control rounded-3 p-2 bg-light border-0 shadow-none font-monospace" placeholder="000.000.000-00" required />
                                 </div>
 
                                 <div className="col-md-6">
                                     <label className="form-label fw-bold small text-uppercase text-muted">Telefone</label>
-                                    <input type="text" name="telefone" value={formData.telefone} onChange={handleChange} className="form-control rounded-3 p-2 bg-light border-0 shadow-none" />
+                                    <input type="text" name="telefone" value={formData.telefone} onChange={handleChange} className="form-control rounded-3 p-2 bg-light border-0 shadow-none" placeholder="(00) 00000-0000" />
                                 </div>
 
                                 <div className="col-12">
@@ -67,14 +87,13 @@ function PacienteFormModal({ isOpen, paciente, onClose, onSave }) {
 
                                 <div className="col-12">
                                     <label className="form-label fw-bold small text-uppercase text-muted">
-                                        Senha {paciente && <span className="text-primary fs-small fw-normal">(Opcional)</span>}
+                                        Senha {paciente && <span className="text-primary fw-normal">(Opcional)</span>}
                                     </label>
                                     <input type="password" name="senha" value={formData.senha} onChange={handleChange} className="form-control rounded-3 p-2 bg-light border-0 shadow-none" required={!paciente} placeholder="••••••••" />
                                 </div>
                             </div>
                         </div>
 
-                        {/* Footer do Modal */}
                         <div className="modal-footer bg-light border-0 px-4 py-3">
                             <button type="button" onClick={onClose} className="btn btn-link text-muted fw-bold text-decoration-none uppercase small">Cancelar</button>
                             <button type="submit" className="btn btn-primary rounded-3 px-4 fw-black uppercase shadow-sm">

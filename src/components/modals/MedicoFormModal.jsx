@@ -6,21 +6,35 @@ const ESPECIALIDADES = [
 ];
 
 function MedicoFormModal({ isOpen, medico, onClose, onSave }) {
-    const [formData, setFormData] = useState({ nome: '', email: '', senha: '', crm: '', especialidade: ESPECIALIDADES[0] });
+    const [formData, setFormData] = useState({ 
+        nome: '', 
+        email: '', 
+        senha: '', 
+        crm: '', 
+        especialidade: ESPECIALIDADES[0],
+        telefone: ''
+    });
 
     useEffect(() => {
         if (isOpen) {
             if (medico) {
                 setFormData({
-                    // Note que usei medico.nome pois o seu AdminMedicos já mapeou corretamente
                     nome: medico.nome || '',
                     email: medico.email || '',
                     senha: '', 
-                    crm: '', // <--- MUDANÇA: Começa vazio para não disparar validação à toa
+                    crm: medico.crm || '', 
                     especialidade: medico.especialidade || ESPECIALIDADES[0],
+                    telefone: medico.telefone || ''
                 });
             } else {
-                setFormData({ nome: '', email: '', senha: '', crm: '', especialidade: ESPECIALIDADES[0] });
+                setFormData({ 
+                    nome: '', 
+                    email: '', 
+                    senha: '', 
+                    crm: '', 
+                    especialidade: ESPECIALIDADES[0],
+                    telefone: ''
+                });
             }
         }
     }, [medico, isOpen]);
@@ -58,7 +72,15 @@ function MedicoFormModal({ isOpen, medico, onClose, onSave }) {
                                 </div>
                                 <div className="col-md-4">
                                     <label className="form-label fw-bold small text-uppercase text-muted">CRM / CRP</label>
-                                    <input type="text" name="crm" value={formData.crm} onChange={handleChange} className="form-control rounded-3 border-0 bg-light p-2 shadow-none" required />
+                                    <input 
+                                        type="text" 
+                                        name="crm" 
+                                        value={formData.crm} 
+                                        onChange={handleChange} 
+                                        className="form-control rounded-3 border-0 bg-light p-2 shadow-none" 
+                                        required 
+                                        placeholder="000000/UF"
+                                    />
                                 </div>
                                 <div className="col-md-6">
                                     <label className="form-label fw-bold small text-uppercase text-muted">Especialidade</label>

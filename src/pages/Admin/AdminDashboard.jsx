@@ -60,7 +60,7 @@ function AdminDashboard() {
 
   return (
     <div className="container-fluid p-0 animate__animated animate__fadeIn">
-      {/* Header */}
+
       <div className="mb-5 d-flex justify-content-between align-items-start">
         <div className="animate__animated animate__slideInLeft">
           <h2 className="fw-black text-dark text-uppercase tracking-tighter mb-1">Visão Geral</h2>
@@ -73,7 +73,6 @@ function AdminDashboard() {
         </div>
       </div>
 
-      {/* Cards com Delay Progressivo */}
       <div className="row g-4 mb-5">
         <div className="col-12 col-md-4 animate__animated animate__fadeInUp" style={{ animationDelay: '0.1s' }}>
           <CardEstatistica titulo="Profissionais" valor={estatisticas.totalMedicos} icone="🧑‍⚕️" color="bg-primary" />
@@ -115,7 +114,6 @@ function AdminDashboard() {
           </div>
         </div>
         
-        {/* Lista Lateral */}
         <div className="col-12 col-lg-4 animate__animated animate__fadeInRight" style={{ animationDelay: '0.5s' }}>
           <div className="card border-0 shadow-sm rounded-4 h-100 bg-white p-4">
             <h5 className="fw-black text-uppercase mb-4 small tracking-widest">Próximos Horários</h5>
@@ -137,7 +135,6 @@ function AdminDashboard() {
         </div>
       </div>
 
-      {/* Badges de Status */}
       <div className="mt-4 d-flex flex-wrap gap-3 animate__animated animate__fadeInUp" style={{ animationDelay: '0.8s' }}>
           <div className="badge-custom bg-white text-success border shadow-xs p-2 px-3 rounded-pill d-flex align-items-center">
               <span className="status-dot bg-success me-2"></span>
@@ -175,6 +172,7 @@ function AdminDashboard() {
       `}</style>
     </div>
   );
+      {/* Badges de Status */}
 }
 
 export default AdminDashboard;

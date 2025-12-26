@@ -5,7 +5,6 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import MedicoFooter from '../../components/medico/MedicoFooter'; 
 
-// REMOVEMOS o item 'Atendimento' daqui, pois ele precisa de um ID
 const medicoNavItems = [
     { name: 'Painel Geral', path: '/medico', icon: '📊' },
     { name: 'Agenda do Dia', path: '/medico/agenda', icon: '🩺' }, 

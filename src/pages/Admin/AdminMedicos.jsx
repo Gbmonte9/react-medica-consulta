@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { listarMedicos, removerMedico, criarMedico, atualizarMedico } from '../../api/medicoService'; 
 import MedicoFormModal from '../../components/modals/MedicoFormModal'; 
+import { toast } from 'react-toastify';
 
 function AdminMedicos() {
     const [medicos, setMedicos] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [medicoEditando, setMedicoEditando] = useState(null); 
 
@@ -15,7 +15,7 @@ function AdminMedicos() {
             const data = await listarMedicos();
             setMedicos(data);
         } catch (err) {
-            setError(err.message || 'Erro ao carregar médicos.');
+            toast.error(err.message || 'Erro ao carregar médicos.');
         } finally {
             setLoading(false);
         }
@@ -23,19 +23,19 @@ function AdminMedicos() {
 
     useEffect(() => { fetchMedicos(); }, []);
 
-    const handleNovo = () => { setMedicoEditando(null); setIsModalOpen(true); };
+    const handleNovo = () => { 
+        setMedicoEditando(null); 
+        setIsModalOpen(true); 
+    };
 
     const handleEditar = (medico) => {
-        const nomeCapturado = medico.nomeUsuario || medico.nome || "";
-        const emailCapturado = medico.emailUsuario || medico.email || "";
-
         setMedicoEditando({
             id: medico.id,
-            nome: nomeCapturado,
-            email: emailCapturado,
-            crm: "", // Deixe vazio para o placeholder "Inalterado" aparecer
-            especialidade: medico.especialidade,
-            telefone: medico.telefone,
+            nome: medico.nomeUsuario || medico.nome || "",
+            email: medico.emailUsuario || medico.email || "",
+            crm: medico.crm || "", 
+            especialidade: medico.especialidade || "",
+            telefone: medico.telefone || "",
             senha: "" 
         }); 
         setIsModalOpen(true);
@@ -43,24 +43,20 @@ function AdminMedicos() {
 
     const handleSalvar = async (medicoData) => {
         try {
-            // Criamos uma cópia para não sujar o estado do formulário
             const payload = { ...medicoData, tipo: 'MEDICO' };
             
             if (medicoEditando?.id) {
-                // Se os campos sensíveis estiverem vazios, removemos do payload
-                // Assim o Java mantém os valores originais do banco
                 if (!payload.senha || !payload.senha.trim()) delete payload.senha;
-                if (!payload.crm || !payload.crm.trim()) delete payload.crm;
-
                 await atualizarMedico(medicoEditando.id, payload);
+                toast.success('Profissional atualizado com sucesso!');
             } else {
                 await criarMedico(payload);
+                toast.success('Profissional cadastrado com sucesso!');
             }
             setIsModalOpen(false);
             fetchMedicos();      
         } catch (err) {
-            // Dica: Se o erro for 409, o Java retornará "CRM já cadastrado"
-            alert(`Falha ao salvar: ${err.message}`);
+            toast.error(`Falha ao salvar: ${err.message}`);
         }
     };
 
@@ -68,9 +64,10 @@ function AdminMedicos() {
         if (!window.confirm(`Remover o profissional ${nome}?`)) return;
         try {
             await removerMedico(id);
+            toast.success('Profissional removido.');
             fetchMedicos(); 
         } catch (err) {
-            alert(`Erro: ${err.message}`);
+            toast.error(`Erro: ${err.message}`);
         }
     };
 
@@ -83,7 +80,6 @@ function AdminMedicos() {
 
     return (
         <div className="container-fluid p-0 animate__animated animate__fadeIn">
-            {/* Cabeçalho */}
             <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 gap-3">
                 <div>
                     <h2 className="fw-black text-dark uppercase tracking-tighter mb-0">Corpo Clínico</h2>
@@ -94,7 +90,6 @@ function AdminMedicos() {
                 </button>
             </div>
 
-            {/* Tabela / Card */}
             <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
                 <div className="table-responsive">
                     <table className="table table-hover align-middle mb-0">
@@ -109,13 +104,9 @@ function AdminMedicos() {
                         <tbody className="border-top-0">
                             {medicos.length === 0 ? (
                                 <tr>
-                                    <td colSpan="4" className="text-center py-5">
-                                        <div className="d-flex flex-column align-items-center opacity-50">
-                                            <span style={{ fontSize: '40px' }}>🩺</span>
-                                            <p className="fw-black text-muted uppercase small tracking-widest mt-2">
-                                                Nenhum profissional localizado no corpo clínico
-                                            </p>
-                                        </div>
+                                    <td colSpan="4" className="text-center py-5 opacity-50">
+                                        <span style={{ fontSize: '40px' }}>🩺</span>
+                                        <p className="fw-black text-muted uppercase small mt-2">Nenhum profissional localizado</p>
                                     </td>
                                 </tr>
                             ) : (
@@ -124,7 +115,7 @@ function AdminMedicos() {
                                         <td className="px-4 py-3">
                                             <div className="d-flex align-items-center">
                                                 <div className="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center me-3 fw-bold" style={{width: '38px', height: '38px'}}>
-                                                    {(medico.nomeUsuario || medico.nome).charAt(0)}
+                                                    {(medico.nomeUsuario || medico.nome || "?").charAt(0)}
                                                 </div>
                                                 <div>
                                                     <div className="fw-bold text-dark">{medico.nomeUsuario || medico.nome}</div>
@@ -166,6 +157,7 @@ function AdminMedicos() {
                 .bg-soft-blue { background-color: #f0f7ff !important; }
                 .btn-white { background: white; border: 1px solid #eee; }
                 .btn-white:hover { background: #f8f9fa; }
+                .fw-black { font-weight: 900; }
             `}</style>
         </div>
     );

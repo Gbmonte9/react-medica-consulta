@@ -28,7 +28,6 @@ function ProntuarioPaciente() {
     return (
         <div className="container-fluid py-3 px-2 px-md-4 animate__animated animate__fadeIn">
             
-            {/* Botão Voltar e Cabeçalho */}
             <div className="mb-4">
                 <button 
                     onClick={() => navigate(-1)} 
@@ -43,7 +42,6 @@ function ProntuarioPaciente() {
             </div>
 
             <div className="row g-4">
-                {/* Coluna Principal: Linha do Tempo */}
                 <div className="col-12 col-custom-1080 col-lg-8">
                     {historicos && historicos.length > 0 ? (
                         historicos.map((h, index) => (
@@ -94,7 +92,6 @@ function ProntuarioPaciente() {
                     )}
                 </div>
                 
-                {/* Coluna Lateral: Resumo */}
                 <div className="col-12 col-custom-1080 col-lg-4">
                     <div className="card border-0 shadow-sm rounded-4 bg-success text-white p-4 sticky-lg-top" style={{ top: '20px' }}>
                         <div className="d-flex align-items-center gap-2 mb-3">

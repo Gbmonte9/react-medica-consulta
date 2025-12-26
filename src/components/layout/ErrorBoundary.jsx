@@ -12,32 +12,26 @@ class ErrorBoundary extends Component {
         };
     }
 
-    // Método chamado quando um erro é capturado
     static getDerivedStateFromError(error) {
-        // Atualiza o estado para que a próxima renderização mostre a UI de fallback
         return { hasError: true };
     }
 
-    // Método para logar o erro
     componentDidCatch(error, errorInfo) {
         this.setState({
             error: error,
             errorInfo: errorInfo
         });
-        // 🚨 Em um ambiente de produção, você logaria isso em um serviço externo (ex: Sentry)
         console.error("Erro capturado pelo Error Boundary:", error, errorInfo);
     }
 
     render() {
         if (this.state.hasError) {
-            // UI de fallback quando um erro for capturado
             return (
                 <div className="container mt-5 text-center">
                     <div className="alert alert-danger p-4">
                         <h2>🚫 Ops! Ocorreu um erro interno.</h2>
                         <p>Infelizmente, um erro inesperado ocorreu. Por favor, tente recarregar a página.</p>
                         
-                        {/* Detalhes do erro para DEBUG (remova em produção) */}
                         {process.env.NODE_ENV === 'development' && (
                             <details className="mt-3 text-start bg-light text-dark p-2 rounded">
                                 <summary>Detalhes Técnicos (Apenas Dev)</summary>

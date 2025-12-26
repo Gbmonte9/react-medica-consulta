@@ -36,7 +36,7 @@ function AdminRelatorio() {
 
     return (
         <div className="container-fluid p-0 animate__animated animate__fadeIn">
-            {/* Header */}
+       
             <div className="mb-5">
                 <h2 className="fw-black text-dark uppercase tracking-tighter mb-1">📊 Inteligência de Dados</h2>
                 <p className="text-muted small fw-bold uppercase">Exportação de documentos e análise de produtividade</p>
@@ -50,7 +50,6 @@ function AdminRelatorio() {
             )}
 
             <div className="row g-4">
-                {/* Cartão PDF - O Único Ativo */}
                 <div className="col-12 col-md-6 col-lg-5">
                     <div className="card border-0 shadow-sm rounded-4 h-100 overflow-hidden transition-hover">
                         <div className="card-body p-4 p-xl-5">
@@ -95,7 +94,6 @@ function AdminRelatorio() {
                     </div>
                 </div>
 
-                {/* Cartão Bloqueado - Próximas Implementações */}
                 <div className="col-12 col-md-6 col-lg-5">
                     <div className="card border-0 shadow-sm rounded-4 h-100 bg-light opacity-75 position-relative overflow-hidden">
                         <div className="card-body p-4 p-xl-5 d-flex flex-column justify-content-center text-center">

@@ -26,7 +26,6 @@ function Register() {
         try {
             await criarPaciente({ nome: name, email, senha: password, cpf, telefone: phone }); 
             setSuccess(true);
-            // Redireciona após 2 segundos para o usuário ver o feedback de sucesso
             setTimeout(() => navigate('/login'), 2000);
         } catch (err) {
             setError(err.message || 'Erro ao criar conta.');
@@ -42,7 +41,6 @@ function Register() {
             <div className="card border-0 shadow-lg animate__animated animate__fadeInUp" 
                  style={{ maxWidth: '500px', width: '100%', borderRadius: '28px', overflow: 'hidden' }}>
                 
-                {/* Header - Alinhado com o novo Login */}
                 <div className="bg-white p-4 p-md-5 text-center border-bottom">
                     <div className="d-flex align-items-center justify-content-center gap-2 mb-2">
                         <div className="bg-dark rounded-4 d-flex align-items-center justify-content-center shadow-sm" 

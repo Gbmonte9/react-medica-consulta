@@ -8,7 +8,6 @@ function AdminFooter() {
       <div className="container-fluid px-4">
         <div className="row align-items-center g-3">
           
-          {/* Lado Esquerdo: Identificação */}
           <div className="col-12 col-md-4 text-center text-md-start">
             <div className="d-flex flex-column">
               <span className="text-dark fw-black text-uppercase tracking-tighter fs-6">
@@ -20,7 +19,6 @@ function AdminFooter() {
             </div>
           </div>
 
-          {/* Centro: Copyright e Status */}
           <div className="col-12 col-md-4 text-center">
             <p className="text-muted fw-bold uppercase mb-1" style={{ fontSize: '10px', letterSpacing: '1px' }}>
               &copy; {anoAtual} Direitos Reservados
@@ -34,7 +32,6 @@ function AdminFooter() {
             </div>
           </div>
 
-          {/* Lado Direito: Suporte e Versão */}
           <div className="col-12 col-md-4 text-center text-md-end">
             <div className="d-inline-block text-md-end">
               <p className="text-dark fw-black mb-0 text-uppercase" style={{ fontSize: '10px' }}>v1.2.0-stable</p>

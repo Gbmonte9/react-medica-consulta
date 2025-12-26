@@ -28,7 +28,6 @@ function AdminLayout() {
     return (
         <div className="d-flex vh-100 overflow-hidden bg-light">
             
-            {/* OVERLAY (Fundo escuro para Mobile) */}
             {isSidebarOpen && (
                 <div 
                     className="position-fixed w-100 h-100 bg-dark opacity-50 d-md-none animate__animated animate__fadeIn"
@@ -37,7 +36,6 @@ function AdminLayout() {
                 ></div>
             )}
 
-            {/* SIDEBAR ADMINISTRATIVA */}
             <aside 
                 className={`bg-white border-end shadow-sm d-flex flex-column h-100 transition-all`}
                 style={{ 
@@ -50,7 +48,7 @@ function AdminLayout() {
                 }}
                 id="admin-sidebar"
             >
-                {/* Logo Section */}
+            
                 <div className="p-4 border-bottom d-flex align-items-center justify-content-between bg-white" style={{ minHeight: '71px' }}>
                     <div className="d-flex align-items-center gap-2">
                         <div className="bg-primary rounded-3 d-flex align-items-center justify-content-center shadow-sm" style={{ width: '35px', height: '35px' }}>
@@ -63,7 +61,7 @@ function AdminLayout() {
                     </button>
                 </div>
                 
-                {/* Menu de Navegação */}
+           
                 <div className="flex-grow-1 overflow-auto p-3 mt-2">
                     <ul className="nav nav-pills flex-column gap-2">
                         {navItems.map((item) => {
@@ -86,7 +84,6 @@ function AdminLayout() {
                     </ul>
                 </div>
 
-                {/* Footer da Sidebar */}
                 <div className="p-3 border-top bg-light">
                     <button onClick={handleLogout} className="btn btn-outline-danger w-100 fw-bold text-uppercase small py-2 rounded-3 border-2">
                         🚪 Encerrar Painel
@@ -94,10 +91,8 @@ function AdminLayout() {
                 </div>
             </aside>
 
-            {/* CONTEÚDO PRINCIPAL */}
             <main className="flex-grow-1 d-flex flex-column overflow-auto">
                 
-                {/* TOPBAR */}
                 <header className="bg-white border-bottom p-3 d-flex align-items-center justify-content-between px-4 shadow-sm sticky-top" style={{ minHeight: '71px' }}>
                     <button className="btn btn-light border d-md-none" onClick={() => setIsSidebarOpen(true)}>
                         <span className="fs-5">☰</span>
@@ -117,7 +112,6 @@ function AdminLayout() {
                     </div>
                 </header>
 
-                {/* CONTEÚDO DINÂMICO COM ANIMAÇÃO */}
                 <div className="p-3 p-md-4 flex-grow-1">
                     <div className="container-fluid bg-white shadow-sm rounded-4 p-4 p-md-5 border animate__animated animate__fadeIn animate__faster">
                         <Outlet />
